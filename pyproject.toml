@@ -1,0 +1,148 @@
+# Slurm Heartbeat - Python Package
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "slurm-heartbeat"
+version = "0.1.1"
+description = "Heartbeat daemon for monitoring Slurm clusters in the European Federated Platform (EFP)"
+readme = "README.md"
+license = {text = "Apache-2.0"}
+requires-python = ">=3.10"
+authors = [
+    {name = "EFP Team", email = "efp-team@example.com"}
+]
+keywords = ["slurm", "heartbeat", "hpc", "federation", "efp", "monitoring"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: System Administrators",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: System :: Clustering",
+    "Topic :: System :: Monitoring",
+]
+
+dependencies = [
+    "aiohttp>=3.8.0",
+    "pydantic>=2.0.0",
+    "pyyaml>=6.0.0",
+    "cryptography>=41.0.0",
+    "prometheus-client>=0.17.0",
+    "httpx>=0.24.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-cov>=4.0.0",
+    "pytest-mock>=3.10.0",
+    "ruff>=0.1.0",
+    "mypy>=1.0.0",
+    "aiosmtplib>=2.0.0",
+]
+
+[project.scripts]
+slurm-heartbeat = "slurmheartbeat.main:run"
+
+[project.urls]
+Homepage = "https://github.com/your-org/slurmheartbeat"
+Documentation = "https://github.com/your-org/slurmheartbeat/docs"
+Repository = "https://github.com/your-org/slurmheartbeat"
+Changelog = "https://github.com/your-org/slurmheartbeat/CHANGELOG.md"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["slurmheartbeat*"]
+
+[tool.setuptools.package-data]
+slurmheartbeat = ["py.typed"]
+
+[tool.ruff]
+# Ruff configuration for Slurm Heartbeat
+target-version = "py310"
+line-length = 100
+src = ["slurmheartbeat", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # Pyflakes
+    "I",    # isort
+    "B",    # flake8-bugbear
+    "C4",   # flake8-comprehensions
+    "UP",   # pyupgrade
+    "TC",   # flake8-type-checking
+    "S",    # flake8-bandit (security)
+    "RUF",  # Ruff-specific rules
+    "ASYNC",# flake8-async
+    "SIM",  # flake8-simplify
+]
+ignore = [
+    "E501",  # line too long (handled by formatter)
+    "B008",  # do not perform function calls in argument defaults
+    "S101",  # assertions allowed in tests
+    "S104",  # 0.0.0.0 binding allowed for server
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = [
+    "S101",  # assertions in tests are OK
+    "S105",  # hardcoded passwords in tests OK
+    "S106",  # hardcoded passwords in tests OK
+    "S108",  # temp files in tests OK
+    "SIM117",  # nested with statements in tests OK
+]
+"tests/conftest.py" = ["S108"]  # /tmp paths in test fixtures OK
+"slurmheartbeat/server/*.py" = [
+    "S104",  # 0.0.0.0 binding allowed for server
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+strict_optional = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+asyncio_mode = "auto"
+filterwarnings = [
+    "ignore::DeprecationWarning",
+]
+
+[tool.coverage.run]
+source = ["slurmheartbeat"]
+branch = true
+omit = [
+    "tests/*",
+    "*/__init__.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+]

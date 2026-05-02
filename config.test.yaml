@@ -1,0 +1,115 @@
+# Test configuration for Slurm Heartbeat daemon
+# Use this file for local testing and development
+
+general:
+  log_level: "DEBUG"
+  log_file: "/tmp/heartbeat.log"
+  daemonize: false
+
+client:
+  enabled: true
+  interval_seconds: 10
+  timeout_seconds: 30
+  retry_count: 3
+  retry_backoff: 2.0
+  
+  slurm:
+    api_url: "http://localhost:6820"
+    api_version: "0.0.39"
+    timeout: 5
+  
+  federation:
+    peers:
+      - name: "peer1"
+        endpoint: "http://localhost:8443/heartbeat"
+        site: "test-site-1"
+        timeout_seconds: 30
+      - name: "peer2"
+        endpoint: "http://localhost:8444/heartbeat"
+        site: "test-site-2"
+        timeout_seconds: 30
+
+server:
+  enabled: true
+  listen_address: "0.0.0.0"
+  listen_port: 8443
+  tls:
+    enabled: false  # Set to true for TLS testing
+    cert_file: "/tmp/cert.pem"
+    key_file: "/tmp/key.pem"
+    ca_file: "/tmp/ca.pem"
+    client_auth: "required"
+    min_version: "1.3"
+    max_version: "1.3"
+  max_connections: 100
+  connection_timeout: 30
+
+federation:
+  state_file: "/tmp/heartbeat_state.json"
+  state_sync_interval: 60
+  healthy_threshold: 2
+  degraded_threshold: 2
+  down_threshold: 3
+  allowed_sites:
+    - "test-site-1"
+    - "test-site-2"
+  blocked_sites: []
+
+monitoring:
+  prometheus:
+    enabled: true
+    port: 9090
+    path: "/metrics"
+    listen_address: "0.0.0.0"
+  alerting:
+    enabled: false
+    webhook:
+      enabled: false
+      url: null
+      timeout: 10
+    email:
+      enabled: false
+      smtp_server: null
+      smtp_port: 587
+      smtp_user: null
+      smtp_password: null
+      from_address: null
+      recipients: []
+    thresholds:
+      peer_down_seconds: 120
+      peer_degraded_seconds: 60
+      latency_high_seconds: 5
+
+cluster:
+  id: "test-cluster"
+  name: "test-cluster"
+  site: "test-site"
+
+security:
+  certificate:
+    auto_rotate: false
+    rotation_warning_days: 30
+  access_control:
+    allowed_ips: []
+    denied_ips: []
+    rate_limit:
+      enabled: true
+      requests_per_minute: 60
+      burst_size: 10
+
+performance:
+  connection_pool:
+    max_size: 20
+    idle_timeout: 300
+  message:
+    max_size_bytes: 65536
+    compression: true
+  resources:
+    max_threads: 10
+    max_memory_mb: 512
+
+debug:
+  enabled: true
+  verbose_logging: true
+  trace_messages: false
+  dump_state_on_error: false

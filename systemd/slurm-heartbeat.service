@@ -1,0 +1,44 @@
+[Unit]
+Description=Slurm Heartbeat EFP Readiness Publisher
+Documentation=https://github.com/your-org/slurmheartbeat
+After=network.target slurmctld.service
+
+[Service]
+Type=simple
+User=slurm
+Group=slurm
+
+# Environment
+Environment=PYTHONUNBUFFERED=1
+Environment=PATH=/usr/bin:/usr/local/bin
+
+# Executables
+# Run in publisher mode to serve /readiness and /metrics
+ExecStart=/usr/bin/python3 -m slurmheartbeat --mode publisher -c /etc/slurm/heartbeat/config.yaml
+# Alternative: Run in client mode to send heartbeats
+# ExecStart=/usr/bin/python3 -m slurmheartbeat --mode client -c /etc/slurm/heartbeat/config.yaml
+# Alternative: Run in both modes (default)
+# ExecStart=/usr/bin/python3 -m slurmheartbeat -c /etc/slurm/heartbeat/config.yaml
+ExecReload=/bin/kill -HUP $MAINPID
+
+# Restart policy
+Restart=on-failure
+RestartSec=5
+
+# Resource limits
+LimitNOFILE=65536
+LimitNPROC=4096
+
+# Security
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/log/slurm /var/run/slurm /var/lib/slurm
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=slurm-heartbeat
+
+[Install]
+WantedBy=multi-user.target

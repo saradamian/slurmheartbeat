@@ -1,0 +1,45 @@
+# Ruff configuration for Slurm Heartbeat
+# This file is deprecated; use [tool.ruff] in pyproject.toml instead.
+# Keeping for reference and IDE compatibility.
+
+target-version = "py310"
+line-length = 100
+src = ["slurmheartbeat", "tests"]
+
+[lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # Pyflakes
+    "I",    # isort
+    "B",    # flake8-bugbear
+    "C4",   # flake8-comprehensions
+    "UP",   # pyupgrade
+    "TC",   # flake8-type-checking
+    "S",    # flake8-bandit (security)
+    "RUF",  # Ruff-specific rules
+    "ASYNC",# flake8-async
+    "SIM",  # flake8-simplify
+]
+ignore = [
+    "E501",  # line too long (handled by formatter)
+    "B008",  # do not perform function calls in argument defaults
+    "S101",  # assertions allowed in tests
+    "S104",  # 0.0.0.0 binding allowed for server
+]
+
+[lint.per-file-ignores]
+"tests/*" = [
+    "S101",  # assertions in tests are OK
+    "S105",  # hardcoded passwords in tests OK
+    "S106",  # hardcoded passwords in tests OK
+]
+"slurmheartbeat/server/*.py" = [
+    "S104",  # 0.0.0.0 binding allowed for server
+]
+
+[format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"

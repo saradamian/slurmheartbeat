@@ -1,0 +1,189 @@
+# Example configuration for Slurm Heartbeat daemon (EFP Readiness Publisher)
+# Copy this to /etc/slurm/heartbeat/config.yaml and modify as needed
+#
+# Per EFP recommendation: This daemon can run in three modes:
+# - publisher: Serve /readiness and /metrics endpoints
+# - client: Collect Slurm state and send heartbeats to peers
+# - both: Combine both modes (default)
+
+general:
+  # Logging configuration
+  log_level: "INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+  log_file: "/var/log/slurm/heartbeat.log"
+  log_format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  
+  # Process management
+  pid_file: "/var/run/slurm/heartbeat.pid"
+  daemonize: false  # Set to true for background operation
+
+# Local cluster identification (required for EFP readiness)
+cluster:
+  id: "lumi"                    # Unique site identifier (e.g., "lumi", "leonardo")
+  name: "lumi-prod"             # Local cluster name
+  site: "CSC Finland"           # Site/organization name
+
+# Client configuration - sends heartbeats to federation peers
+client:
+  enabled: true
+  
+  # Heartbeat timing
+  interval_seconds: 10      # Time between outgoing heartbeats
+  timeout_seconds: 30       # Wait time for peer response
+  retry_count: 3            # Number of retry attempts
+  retry_backoff: 2.0        # Exponential backoff multiplier
+  
+  # Slurm integration
+  slurm:
+    api_url: "http://localhost:6820"      # Slurm REST API endpoint
+    api_version: "0.0.39"                  # Slurm REST API version
+    timeout: 5                             # API request timeout (seconds)
+    
+    # Alternative: Direct slurmctld socket (requires root)
+    # socket_path: "/run/slurm/slurmctld.sock"
+  
+  # Federation peers to send heartbeats to
+  federation:
+    peers:
+      - name: "leonardo"
+        endpoint: "https://leonardo.example.com:8443/heartbeat"
+        site: "CINECA Italy"
+        timeout_seconds: 30
+        
+      - name: "mars"
+        endpoint: "https://mars.example.com:8443/heartbeat"
+        site: "HLRS Germany"
+        timeout_seconds: 30
+
+# Server configuration - serves readiness and receives heartbeats
+server:
+  enabled: true
+  
+  # Network binding
+  listen_address: "0.0.0.0"  # Bind to all interfaces
+  listen_port: 8443           # Port to listen on
+  
+  # Authorization for /readiness endpoint
+  # Sites allowed to query readiness (empty = allow all for testing)
+  allowed_sites:
+    - "lumi"
+    - "leonardo"
+    - "mars"
+    - "efp-monitoring"
+  
+  # TLS configuration (recommended: enabled)
+  tls:
+    enabled: true
+    cert_file: "/etc/slurm/heartbeat/cert.pem"
+    key_file: "/etc/slurm/heartbeat/key.pem"
+    ca_file: "/etc/slurm/heartbeat/ca.pem"
+    client_auth: "required"   # "required", "optional", or "disabled"
+    
+    # TLS version (recommended: 1.3)
+    min_version: "1.3"
+    max_version: "1.3"
+  
+  # Connection limits
+  max_connections: 100
+  connection_timeout: 30
+
+# Federation state management (for peer-to-peer mode)
+federation:
+  # State persistence
+  state_file: "/var/lib/slurm/heartbeat/state.json"
+  state_sync_interval: 60     # Seconds between state syncs
+  
+  # Member status thresholds
+  healthy_threshold: 2        # Heartbeats to mark as healthy
+  degraded_threshold: 2       # Missed heartbeats before degraded
+  down_threshold: 3           # Missed heartbeats before down
+  
+  # Allowed federation members (empty = allow all)
+  allowed_sites:
+    - "lumi"
+    - "leonardo"
+    - "mars"
+    
+  # Blocked sites (overrides allowed)
+  blocked_sites: []
+
+# Metrics and monitoring
+monitoring:
+  # Prometheus metrics
+  prometheus:
+    enabled: true
+    port: 9090
+    path: "/metrics"
+    listen_address: "0.0.0.0"
+    
+  # Alerting configuration
+  alerting:
+    enabled: true
+    
+    # Webhook notifications
+    webhook:
+      enabled: false
+      url: "https://alerts.example.com/webhook"
+      timeout: 10
+      headers:
+        Authorization: "Bearer YOUR_TOKEN"
+        
+    # Email notifications
+    email:
+      enabled: false
+      smtp_server: "smtp.example.com"
+      smtp_port: 587
+      smtp_user: "heartbeat@example.com"
+      smtp_password: "YOUR_PASSWORD"
+      from_address: "heartbeat@example.com"
+      recipients:
+        - "ops-team@example.com"
+        - "sre-team@example.com"
+        
+    # Alert thresholds
+    thresholds:
+      peer_down_seconds: 120      # Alert after 2 minutes
+      peer_degraded_seconds: 60   # Alert after 1 minute
+      latency_high_seconds: 5     # Alert if latency > 5 seconds
+
+# Security configuration
+security:
+  # Certificate rotation
+  certificate:
+    auto_rotate: false
+    rotation_warning_days: 30     # Warn when cert expires in N days
+    
+  # Access control
+  access_control:
+    # IP-based restrictions (optional)
+    allowed_ips: []
+    denied_ips: []
+    
+    # Rate limiting
+    rate_limit:
+      enabled: true
+      requests_per_minute: 60
+      burst_size: 10
+
+# Performance tuning
+performance:
+  # Connection pooling
+  connection_pool:
+    max_size: 20
+    idle_timeout: 300
+    
+  # Message handling
+  message:
+    max_size_bytes: 65536         # Maximum message size
+    compression: true              # Enable gzip compression
+    
+  # Resource limits
+  resources:
+    max_threads: 10
+    max_memory_mb: 512
+
+# Debugging (disable in production)
+debug:
+  enabled: false
+  verbose_logging: false
+  trace_messages: false
+  dump_state_on_error: false
