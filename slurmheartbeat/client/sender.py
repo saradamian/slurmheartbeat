@@ -42,11 +42,30 @@ class HeartbeatSender:
     async def _get_client(self) -> httpx.AsyncClient:
         """Get or create HTTP client with TLS support."""
         if self._client is None or self._client.is_closed:
-            # For now, no TLS configuration for outgoing requests
-            # TLS can be added later if needed for peer-to-peer communication
-            self._client = httpx.AsyncClient(
-                timeout=self._timeout,
-            )
+            # Check if TLS is configured
+            tls_config = getattr(self.config, "tls", None)
+
+            if tls_config and getattr(tls_config, "enabled", False):
+                # Create SSL context with client cert for mTLS
+                from slurmheartbeat.protocol.security import create_client_ssl_context
+
+                ssl_context = create_client_ssl_context(
+                    cert_file=tls_config.cert_file,
+                    key_file=tls_config.key_file,
+                    ca_file=tls_config.ca_file,
+                    verify=True,
+                )
+
+                self._client = httpx.AsyncClient(
+                    timeout=self._timeout,
+                    verify=ssl_context,  # Server verification
+                    cert=(tls_config.cert_file, tls_config.key_file),  # Client cert for mTLS
+                )
+            else:
+                # No TLS - use default client (for testing only)
+                self._client = httpx.AsyncClient(
+                    timeout=self._timeout,
+                )
 
         return self._client
 
@@ -67,13 +86,32 @@ class HeartbeatSender:
         try:
             client = await self._get_client()
 
+            # Sign the message before sending
+            from slurmheartbeat.protocol.security import load_private_key
+
+            tls_config = getattr(self.config, "tls", None)
+            if tls_config and getattr(tls_config, "enabled", False):
+                try:
+                    private_key = load_private_key(tls_config.key_file)
+                    message.sign(private_key)  # sign() modifies in-place
+                except Exception as e:
+                    logger.error(f"Failed to sign message: {e}")
+                    # Fail closed: do not send unsigned message
+                    return SendResult(
+                        success=False,
+                        peer_name=peer.name,
+                        latency_ms=(time.time() - start_time) * 1000,
+                        error=f"Signing failed: {e}",
+                    )
+            signed_message = message
+
             # Prepare request
             headers = {"Content-Type": "application/json"}
 
             # Send heartbeat
             response = await client.post(
                 peer.endpoint,
-                json=message.to_dict(),
+                json=signed_message.to_dict(),
                 headers=headers,
             )
 

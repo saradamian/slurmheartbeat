@@ -50,7 +50,10 @@ class FederationState:
         self.down_threshold = 3
 
         # Allowed federation members (CN or OU from certificates)
+        # Initialize from config if available
         self._allowed_members: set[str] = set()
+        if hasattr(config, "allowed_sites") and config.allowed_sites:
+            self._allowed_members = set(config.allowed_sites)
 
         # Peer public keys for signature verification (peer_name -> public_key_pem)
         self._peer_public_keys: dict[str, str] = {}
@@ -233,14 +236,15 @@ class HeartbeatReceiver:
         self._site: web.TCPSite | None = None
         self._running = False
 
-        # Load allowed members and peer public keys from config if available
+        # Load allowed members from ServerConfig.allowed_sites
+        # and peer public keys from FederationConfig.peer_public_keys
+        if hasattr(config, "allowed_sites") and config.allowed_sites:
+            self.state.set_allowed_members(config.allowed_sites)
+
+        # Load peer public keys from federation config if available
         if hasattr(config, "federation"):
             federation_config = getattr(config, "federation", None)
             if federation_config:
-                allowed_members = getattr(federation_config, "allowed_members", None)
-                if allowed_members:
-                    self.state.set_allowed_members(allowed_members)
-
                 peer_public_keys = getattr(federation_config, "peer_public_keys", {})
                 for peer_name, public_key_pem in peer_public_keys.items():
                     self.state.set_peer_public_key(peer_name, public_key_pem)
@@ -284,7 +288,7 @@ class HeartbeatReceiver:
                     ssl_obj = request.transport.get_extra_info("ssl_object")
                     if ssl_obj:
                         cert = ssl_obj.getpeercert(binary_form=False)
-                
+
                 if cert and isinstance(cert, dict):
                     # Extract CN from certificate
                     subject = cert.get("subject", [])

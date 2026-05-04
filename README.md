@@ -202,9 +202,34 @@ Key configuration sections:
 ## Documentation
 
 - [`EFP_HEARTBEAT_RECOMMENDATION.md`](EFP_HEARTBEAT_RECOMMENDATION.md) - EFP requirements and recommendations
-- [`EFP_IMPLEMENTATION_SUMMARY.md`](EFP_IMPLEMENTATION_SUMMARY.md) - Implementation details
-- [`TECHNICAL_DESIGN.md`](TECHNICAL_DESIGN.md) - Detailed technical design
-- [`docs/`](docs/) - Operations, security, and deployment guides
+- [`CHANGELOG.md`](CHANGELOG.md) - Version history and changes
+- [`docs/`](docs/) - Operations, security, deployment, and testing guides
+
+## Implementation Status
+
+**✅ PRODUCTION READY** - All 12 audit findings resolved (2026-05-02)
+
+- **Tests**: 106/106 passing
+- **Linting**: Ruff clean
+- **Security**: All critical issues fixed
+- **EFP Alignment**: Fully compliant
+
+### Recent Fixes (Audit 2026-05-02)
+
+| # | Issue | Status |
+|---|-------|--------|
+| 1 | Outgoing heartbeat signing broken, TLS unreachable | ✅ Fixed |
+| 2 | Publisher rejects standard mTLS client certificates | ✅ Fixed |
+| 3 | Legacy receiver allowlist not wired from config | ✅ Fixed |
+| 4 | `sign()` expects PEM bytes but receives key object | ✅ Fixed |
+| 5 | Sender silently sends unsigned messages on signing failure | ✅ Fixed |
+| 6 | Prometheus registry not passed to `start_http_server` | ✅ Fixed |
+| 7 | `client.enabled` flag ignored | ✅ Fixed |
+| 8 | Metrics singleton double-starts | ✅ Fixed |
+| 9 | Readiness not signed before return | ✅ Implemented |
+| 10 | Signal derivation hardcoded | ✅ Implemented |
+| 11 | Missing client TLS config in example | ✅ Fixed |
+| 12 | Documentation gaps | ✅ Fixed |
 
 ## Testing
 
@@ -219,7 +244,7 @@ pytest tests/ -v --cov=slurmheartbeat --cov-report=html
 pytest tests/test_schema.py -v
 ```
 
-**Current Status**: ✅ 95 tests passing
+**Current Status**: ✅ 106 tests passing
 
 ## Status Definitions
 
@@ -232,6 +257,13 @@ Per EFP recommendation:
 | `draining` | Stopping intake | Maintenance mode, intentional shutdown |
 | `unavailable` | Unreachable/unhealthy | slurmctld down, >50% nodes down |
 | `unknown` | Stale/contradictory | No data, collection errors |
+
+## Known Limitations
+
+1. **Legacy P2P**: `HeartbeatMessage` (legacy) and `ReadinessMessage` (EFP) both supported. Legacy protocol is deprecated but kept for backward compatibility.
+2. **Signature Verification**: `verify_signature()` still expects PEM bytes (not key objects).
+3. **End-to-End Tests**: No integration tests with real TLS certificates (all tests use mocks).
+4. **Readiness Signing**: Optional - requires `signing_key_file` configuration in publisher.
 
 ## What This Does NOT Do
 

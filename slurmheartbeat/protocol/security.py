@@ -9,7 +9,7 @@ from pathlib import Path
 
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
-from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.primitives.asymmetric import padding, rsa
 from cryptography.x509.oid import NameOID
 
 logger = logging.getLogger(__name__)
@@ -200,6 +200,43 @@ def generate_ca_certificate(
     return cert, private_key
 
 
+def load_private_key(key_file: str, password: str | None = None) -> rsa.RSAPrivateKey:
+    """Load a private key from a file.
+
+    Args:
+        key_file: Path to private key file.
+        password: Optional password for encrypted key.
+
+    Returns:
+        Loaded private key.
+    """
+    from pathlib import Path
+
+    key_path = Path(key_file)
+    if not key_path.exists():
+        raise FileNotFoundError(f"Private key file not found: {key_file}")
+
+    with open(key_path, "rb") as f:
+        key_data = f.read()
+
+    # Try loading with password first if provided
+    if password:
+        try:
+            return serialization.load_pem_private_key(
+                key_data,
+                password=password.encode(),
+            )
+        except Exception:
+            logger.debug(f"Failed to load key with password from {key_file}")
+            pass
+
+    # Try loading without password
+    return serialization.load_pem_private_key(
+        key_data,
+        password=None,
+    )
+
+
 def generate_site_certificate(
     ca_cert: x509.Certificate,
     ca_key: rsa.RSAPrivateKey,
@@ -363,7 +400,7 @@ def verify_certificate_chain(
             public_key.verify(
                 cert.signature,
                 cert.tbs_certificate_bytes,
-                padding=serialization.PKCS1v15(),
+                padding=padding.PKCS1v15(),
                 algorithm=hashes.SHA256(),
             )
         return True
@@ -378,6 +415,7 @@ __all__ = [
     "create_ssl_context",
     "generate_ca_certificate",
     "generate_site_certificate",
+    "load_private_key",
     "save_certificate",
     "save_private_key",
     "verify_certificate_chain",

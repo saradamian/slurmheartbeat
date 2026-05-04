@@ -183,3 +183,50 @@ class TestMetricsServer:
             mock_cpu.assert_called_once_with(65.5)
             mock_memory.assert_called_once_with(72.3)
             mock_gpu.assert_called_once_with(45.0)
+
+    def test_get_metrics_returns_string(self):
+        """Test that get_metrics returns a string (Prometheus text format)."""
+        config = PrometheusConfig()
+        server = MetricsServer(config)
+
+        result = server.get_metrics()
+
+        assert isinstance(result, str)
+        assert "slurmheartbeat_" in result  # Should contain our metrics
+
+    def test_record_readiness_update_with_site(self):
+        """Test recording readiness update with site parameter."""
+        config = PrometheusConfig()
+        server = MetricsServer(config)
+
+        with patch.object(server.peer_status, "labels") as mock_labels:
+            mock_gauge = MagicMock()
+            mock_labels.return_value = mock_gauge
+
+            server.record_readiness_update("ready", "test-site")
+
+            mock_labels.assert_called_once_with(site="test-site")
+            mock_gauge.set.assert_called_once_with(1)  # ready = 1
+
+    def test_record_readiness_update_all_statuses(self):
+        """Test recording readiness update for all status values."""
+        config = PrometheusConfig()
+        server = MetricsServer(config)
+
+        status_map = {
+            "ready": 1,
+            "limited": 0,
+            "draining": -1,
+            "unavailable": -2,
+            "unknown": 0,
+        }
+
+        for status, expected_value in status_map.items():
+            with patch.object(server.peer_status, "labels") as mock_labels:
+                mock_gauge = MagicMock()
+                mock_labels.return_value = mock_gauge
+
+                server.record_readiness_update(status, "test-site")
+
+                mock_labels.assert_called_with(site="test-site")
+                mock_gauge.set.assert_called_with(expected_value)

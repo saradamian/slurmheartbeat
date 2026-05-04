@@ -8,7 +8,7 @@ from datetime import datetime
 from typing import Any
 
 from cryptography.hazmat.primitives import hashes, serialization
-from cryptography.hazmat.primitives.asymmetric import padding
+from cryptography.hazmat.primitives.asymmetric import padding, rsa
 
 
 @dataclass
@@ -77,7 +77,23 @@ class FederationInfo:
 
 @dataclass
 class HeartbeatMessage:
-    """Heartbeat message sent between federation members."""
+    """Heartbeat message sent between federation members.
+
+    DEPRECATION NOTICE:
+    This legacy protocol is maintained for backward compatibility with existing
+    federation peers. New implementations should use ReadinessMessage from
+    slurmheartbeat.protocol.schema for EFP-aligned readiness publishing.
+
+    The legacy HeartbeatMessage:
+    - Uses full Slurm metrics (not EFP schema)
+    - Supports P2P heartbeat exchange
+    - Will be deprecated in a future release
+
+    The EFP ReadinessMessage:
+    - Uses minimal readiness schema (status, signals, capacity_hint)
+    - Serves /readiness endpoint for pull-based access
+    - Recommended for new EFP deployments
+    """
 
     version: str = "1.0"
     timestamp: str = field(default_factory=lambda: datetime.utcnow().isoformat() + "Z")
@@ -241,18 +257,24 @@ class HeartbeatMessage:
             resource_usage=metrics.resource_usage,
         )
 
-    def sign(self, private_key_pem: bytes) -> None:
+    def sign(self, private_key: rsa.RSAPrivateKey | bytes) -> None:
         """Sign the message with a private key.
 
         Args:
-            private_key_pem: Private key in PEM format (bytes).
+            private_key: Private key (either RSAPrivateKey object or PEM bytes).
         """
         message_json = self.to_json()
-        private_key = serialization.load_pem_private_key(
-            private_key_pem,
-            password=None,
-        )
-        signature = private_key.sign(message_json.encode(), padding.PKCS1v15(), hashes.SHA256())
+
+        # Handle both key objects and PEM bytes
+        if isinstance(private_key, bytes):
+            private_key_obj = serialization.load_pem_private_key(
+                private_key,
+                password=None,
+            )
+        else:
+            private_key_obj = private_key
+
+        signature = private_key_obj.sign(message_json.encode(), padding.PKCS1v15(), hashes.SHA256())
         self.signature = signature.hex()
 
     def verify_signature(self, public_key_pem: bytes) -> bool:

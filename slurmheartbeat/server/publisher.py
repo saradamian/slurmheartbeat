@@ -55,6 +55,7 @@ class ReadinessPublisher:
         fed_state: str = "UNKNOWN",
         ttl_seconds: int = 90,
         metrics: MetricsServer | None = None,
+        signing_key_file: str | None = None,
     ):
         """Initialize the readiness publisher.
 
@@ -65,12 +66,14 @@ class ReadinessPublisher:
             fed_state: Federation state
             ttl_seconds: Time-to-live for readiness documents
             metrics: Optional metrics server instance (uses default if not provided)
+            signing_key_file: Path to private key for signing readiness documents (optional)
         """
         self.config = config
         self.site_id = site_id
         self.cluster_name = cluster_name
         self.fed_state = fed_state
         self.ttl_seconds = ttl_seconds
+        self.signing_key_file = signing_key_file
 
         self.state = ReadinessState(
             site_id=site_id,
@@ -162,7 +165,7 @@ class ReadinessPublisher:
         """
         self.state.last_readiness = readiness
         self.state.last_update = datetime.utcnow()
-        self._metrics.record_readiness_update(readiness.status.value)
+        self._metrics.record_readiness_update(readiness.status.value, self.site_id)
         logger.debug(f"Readiness updated: {readiness.status.value}")
 
     async def _handle_readiness(self, request: web.Request) -> web.Response:
@@ -211,6 +214,19 @@ class ReadinessPublisher:
 
         # Return signed readiness document
         readiness = self.state.last_readiness
+        
+        # Sign the readiness document if signing is configured
+        if self.signing_key_file and readiness.signature is None:
+            try:
+                from slurmheartbeat.protocol.security import load_private_key
+                private_key = load_private_key(self.signing_key_file)
+                # sign() accepts both key objects and PEM bytes
+                readiness.sign(private_key)
+                logger.debug("Readiness document signed")
+            except Exception as e:
+                logger.warning(f"Failed to sign readiness document: {e}")
+                # Continue with unsigned document (fail-open for availability)
+        
         return web.json_response(
             readiness.to_dict(),
             content_type="application/json",
@@ -221,7 +237,7 @@ class ReadinessPublisher:
 
         Returns Prometheus-compatible metrics.
         """
-        metrics_text = await self._metrics.get_metrics()
+        metrics_text = self._metrics.get_metrics()
         return web.Response(
             text=metrics_text,
             content_type="text/plain",
@@ -264,7 +280,28 @@ class ReadinessPublisher:
 
             # Parse certificate to extract CN
             if isinstance(cert, dict):
-                # DER format (already parsed)
+                # Standard SSL dict format from getpeercert(binary_form=False)
+                # Extract CN from subject
+                subject = cert.get("subject", [])
+                for attr_tuple in subject:
+                    if attr_tuple and len(attr_tuple) >= 2:
+                        key = (
+                            attr_tuple[0][0]
+                            if isinstance(attr_tuple[0], tuple)
+                            else attr_tuple[0]
+                        )
+                        value = (
+                            attr_tuple[0][1]
+                            if isinstance(attr_tuple[0], tuple) and len(attr_tuple[0]) >= 2
+                            else attr_tuple[1]
+                            if len(attr_tuple) >= 2
+                            else None
+                        )
+                        if key == "commonName":
+                            return value
+                return None
+            elif isinstance(cert, bytes):
+                # DER format (binary)
                 from cryptography import x509
 
                 cert = x509.load_der_x509_certificate(cert)
@@ -295,10 +332,10 @@ class ReadinessPublisher:
         allowed_sites = getattr(self.config, "allowed_sites", [])
 
         if not allowed_sites:
-            # If no allowed_sites configured, allow all (for testing)
-            # In production, this should be explicitly configured
-            logger.warning("No allowed_sites configured - allowing all peers")
-            return True
+            # Fail closed: no allowed_sites configured means reject all
+            # In production, this must be explicitly configured
+            logger.error("No allowed_sites configured - rejecting all peers")
+            return False
 
         return peer_name in allowed_sites
 

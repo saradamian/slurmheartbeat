@@ -69,28 +69,38 @@ class HeartbeatDaemon:
         logger.info("Starting Slurm Heartbeat daemon")
         self._running = True
 
-        # Initialize components based on mode
-        if self.mode in ("client", "both") and self.config.client.enabled:
-            self.collector = SlurmCollector(self.config.client.slurm)
-            self.sender = HeartbeatSender(self.config.client)
+        # Initialize metrics server FIRST, before any components that depend on it
+        if self.config.monitoring.prometheus.enabled:
+            self.metrics = MetricsServer(self.config.monitoring.prometheus)
 
-            # Initialize normalizer for readiness generation
+        # Initialize components based on mode
+        # In publisher mode, we still need collector/normalizer to generate readiness
+        # client.enabled only controls outgoing heartbeat sending, not readiness generation
+        if self.mode in ("client", "both", "publisher"):
+            # Always initialize collector/normalizer for readiness generation
+            self.collector = SlurmCollector(self.config.client.slurm)
             self.normalizer = ReadinessNormalizer(
                 site_id=self.config.cluster.id,
                 cluster_name=self.config.cluster.name,
                 fed_state="UNKNOWN",  # Will be updated from Slurm
                 ttl_seconds=90,
             )
-        elif self.mode in ("client", "both"):
-            logger.info("Client heartbeat disabled")
+
+            # Only initialize sender if client is enabled
+            if self.config.client.enabled:
+                self.sender = HeartbeatSender(self.config.client) if self.mode in ("client", "both") else None
+            else:
+                logger.info("Client heartbeat disabled (outgoing heartbeats)")
 
         if self.mode in ("publisher", "both") and self.config.server.enabled:
+            # Pass shared metrics instance to publisher (may be None if prometheus disabled)
             self.publisher = ReadinessPublisher(
                 config=self.config.server,
                 site_id=self.config.cluster.id,
                 cluster_name=self.config.cluster.name,
                 fed_state="UNKNOWN",
                 ttl_seconds=90,
+                metrics=self.metrics,  # Pass shared metrics instance (or None)
             )
 
         # Only start legacy P2P receiver if explicitly enabled (feature flag)
@@ -100,18 +110,6 @@ class HeartbeatDaemon:
             and getattr(self.config.server, "enable_legacy_p2p", True)
         ):
             self.receiver = HeartbeatReceiver(self.config.server)
-
-        if self.config.monitoring.prometheus.enabled:
-            self.metrics = MetricsServer(self.config.monitoring.prometheus)
-
-        # Update peer status metrics on startup
-        if self.metrics and self.receiver:
-            state = await self.receiver.get_state()
-            for peer_data in state.get("peers", []):
-                peer_name = peer_data.get("name", "unknown")
-                status = peer_data.get("status", "unknown")
-                failures = peer_data.get("consecutive_failures", 0)
-                self.metrics.update_peer_status(peer_name, status, 0, failures)
 
         # Start components
         if self.receiver:
@@ -130,9 +128,23 @@ class HeartbeatDaemon:
             await self.metrics.start()
             logger.info(f"Metrics server started on port {self.config.monitoring.prometheus.port}")
 
-        # Start heartbeat loop if in client mode and enabled
-        if self.mode in ("client", "both") and self.config.client.enabled:
-            self._tasks.append(asyncio.create_task(self._heartbeat_loop()))
+        # Update peer status metrics on startup
+        if self.metrics and self.receiver:
+            state = await self.receiver.get_state()
+            for peer_data in state.get("peers", []):
+                peer_name = peer_data.get("name", "unknown")
+                status = peer_data.get("status", "unknown")
+                failures = peer_data.get("consecutive_failures", 0)
+                self.metrics.update_peer_status(peer_name, status, 0, failures)
+
+        # Start heartbeat loop if in client/publisher mode
+        # Only run if client.enabled is true (for outgoing heartbeats)
+        # Publisher mode still needs the loop for readiness generation
+        if self.mode in ("client", "both", "publisher"):
+            if self.config.client.enabled:
+                self._tasks.append(asyncio.create_task(self._heartbeat_loop()))
+            else:
+                logger.info("Heartbeat loop disabled (client.enabled=false)")
 
         logger.info("Slurm Heartbeat daemon started successfully")
 
@@ -171,16 +183,20 @@ class HeartbeatDaemon:
         """
         while self._running:
             try:
-                # Collect metrics from Slurm
+                # Collect metrics from Slurm (single collection per loop)
                 if self.collector:
                     metrics = await self.collector.collect()
+
+                    # Derive signals from collection result (no second collection)
+                    slurmctld_reachable = metrics is not None and metrics.node_stats.total > 0
+                    maintenance = await self._check_maintenance_state()
 
                     # Normalize to EFP readiness schema
                     if self.normalizer:
                         readiness = self.normalizer.normalize(
                             metrics,
-                            slurmctld_reachable=True,  # TODO: Check actual reachability
-                            maintenance=False,  # TODO: Check maintenance state
+                            slurmctld_reachable=slurmctld_reachable,
+                            maintenance=maintenance,
                         )
 
                         # Update readiness in publisher
@@ -269,6 +285,36 @@ class HeartbeatDaemon:
             except Exception as e:
                 logger.error(f"Error in heartbeat loop: {e}")
                 await asyncio.sleep(self.config.client.interval_seconds)
+
+    async def _check_slurmctld_reachable(self) -> bool:
+        """Check if slurmctld is reachable.
+
+        Returns:
+            True if slurmctld is reachable, False otherwise.
+        """
+        if not self.collector:
+            return False
+
+        try:
+            # Try to collect metrics - if successful, slurmctld is reachable
+            await self.collector.collect()
+            return True
+        except Exception:
+            return False
+
+    async def _check_maintenance_state(self) -> bool:
+        """Check if the system is in maintenance mode.
+
+        Returns:
+            True if in maintenance mode, False otherwise.
+        """
+        # Check for maintenance file
+        maintenance_file = "/var/run/slurm/heartbeat/maintenance"
+        try:
+            import anyio
+            return await anyio.Path(maintenance_file).exists()
+        except Exception:
+            return False
 
 
 def parse_args() -> argparse.Namespace:

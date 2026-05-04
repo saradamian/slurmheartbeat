@@ -46,6 +46,7 @@ class HeartbeatClientConfig:
     retry_backoff: float = 2.0
     slurm: SlurmConfig = field(default_factory=SlurmConfig)
     federation: FederationConfig = field(default_factory=FederationConfig)
+    tls: TLSConfig | None = None  # Client TLS for mTLS and signing
 
 
 @dataclass
@@ -164,6 +165,20 @@ class ClientConfig:
         # Parse client section
         if "client" in data:
             client_data = data["client"]
+            # Parse client TLS config if present
+            client_tls_data = client_data.get("tls", {})
+            client_tls = None
+            if client_tls_data:
+                client_tls = TLSConfig(
+                    enabled=client_tls_data.get("enabled", True),
+                    cert_file=client_tls_data.get("cert_file", "/etc/slurm/heartbeat/cert.pem"),
+                    key_file=client_tls_data.get("key_file", "/etc/slurm/heartbeat/key.pem"),
+                    ca_file=client_tls_data.get("ca_file", "/etc/slurm/heartbeat/ca.pem"),
+                    client_auth=client_tls_data.get("client_auth", "required"),
+                    min_version=client_tls_data.get("min_version", "1.3"),
+                    max_version=client_tls_data.get("max_version", "1.3"),
+                )
+
             config.client = HeartbeatClientConfig(
                 enabled=client_data.get("enabled", True),
                 interval_seconds=client_data.get("interval_seconds", 10),
@@ -187,6 +202,7 @@ class ClientConfig:
                     ],
                     peer_public_keys=client_data.get("federation", {}).get("peer_public_keys", {}),
                 ),
+                tls=client_tls,
             )
 
         # Parse server section
@@ -242,5 +258,13 @@ class ClientConfig:
                 name=cluster_data.get("name", "unknown"),
                 site=cluster_data.get("site", "unknown"),
             )
+
+        # Parse top-level federation section for peer_public_keys only
+        # Do NOT overwrite server.allowed_sites - keep them separate
+        if "federation" in data:
+            fed_data = data["federation"]
+            # Only load peer_public_keys for signature verification
+            if "peer_public_keys" in fed_data:
+                config.client.federation.peer_public_keys = fed_data.get("peer_public_keys", {})
 
         return config

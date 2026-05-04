@@ -8,6 +8,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from slurmheartbeat.client.config import ServerConfig
 from slurmheartbeat.protocol.message import ClusterInfo, HeartbeatMessage
+from slurmheartbeat.server.publisher import ReadinessPublisher
 from slurmheartbeat.server.receiver import FederationState, HeartbeatReceiver
 
 
@@ -389,3 +390,56 @@ class TestHeartbeatReceiver:
         response = await receiver._handle_heartbeat(mock_request)
 
         assert response.status == 403
+
+
+class TestReadinessPublisher:
+    """Tests for ReadinessPublisher class."""
+
+    def test_create_publisher(self):
+        """Test creating readiness publisher."""
+        config = ServerConfig()
+        publisher = ReadinessPublisher(config, "test-site", "test-cluster")
+
+        assert publisher.site_id == "test-site"
+        assert publisher.cluster_name == "test-cluster"
+        assert publisher.state.site_id == "test-site"
+        assert publisher.state.cluster_name == "test-cluster"
+
+    def test_update_readiness(self):
+        """Test updating readiness state."""
+        config = ServerConfig()
+        publisher = ReadinessPublisher(config, "test-site", "test-cluster")
+
+        # Create a readiness message
+        from slurmheartbeat.protocol.schema import (
+            CapacityHint,
+            ReadinessMessage,
+            ReadinessStatus,
+            Signals,
+        )
+
+        readiness = ReadinessMessage(
+            site_id="test-site",
+            cluster_name="test-cluster",
+            status=ReadinessStatus.READY,
+            signals=Signals(),
+            capacity_hint=CapacityHint(),
+        )
+
+        # Update readiness
+        publisher.update_readiness(readiness)
+
+        assert publisher.state.last_readiness == readiness
+        assert publisher.state.last_update is not None
+
+    @pytest.mark.asyncio
+    async def test_handle_metrics_returns_string(self):
+        """Test that /metrics handler returns string, not awaits registry."""
+        config = ServerConfig()
+        publisher = ReadinessPublisher(config, "test-site", "test-cluster")
+
+        # Get metrics - should return string, not awaitable
+        metrics_text = publisher._metrics.get_metrics()
+
+        assert isinstance(metrics_text, str)
+        assert "slurmheartbeat_" in metrics_text

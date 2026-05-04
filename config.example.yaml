@@ -41,6 +41,13 @@ client:
     # Alternative: Direct slurmctld socket (requires root)
     # socket_path: "/run/slurm/slurmctld.sock"
   
+  # Client TLS configuration for mTLS and message signing
+  tls:
+    enabled: true
+    cert_file: "/etc/slurm/heartbeat/cert.pem"
+    key_file: "/etc/slurm/heartbeat/key.pem"
+    ca_file: "/etc/slurm/heartbeat/ca.pem"
+    
   # Federation peers to send heartbeats to
   federation:
     peers:
@@ -87,6 +94,7 @@ server:
   connection_timeout: 30
 
 # Federation state management (for peer-to-peer mode)
+# Note: Use server.allowed_sites for authorization instead
 federation:
   # State persistence
   state_file: "/var/lib/slurm/heartbeat/state.json"
@@ -97,14 +105,10 @@ federation:
   degraded_threshold: 2       # Missed heartbeats before degraded
   down_threshold: 3           # Missed heartbeats before down
   
-  # Allowed federation members (empty = allow all)
-  allowed_sites:
-    - "lumi"
-    - "leonardo"
-    - "mars"
-    
-  # Blocked sites (overrides allowed)
-  blocked_sites: []
+  # Peer public keys for signature verification (optional)
+  # peer_public_keys:
+  #   "lumi": "-----BEGIN PUBLIC KEY-----\n...\n-----END PUBLIC KEY-----"
+  #   "leonardo": "-----BEGIN PUBLIC KEY-----\n...\n-----END PUBLIC KEY-----"
 
 # Metrics and monitoring
 monitoring:

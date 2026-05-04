@@ -291,13 +291,15 @@ class MetricsServer:
         self.local_memory_percent.set(memory_percent)
         self.local_gpu_percent.set(gpu_percent)
 
-    def get_metrics(self) -> CollectorRegistry:
-        """Get the metrics registry.
+    def get_metrics(self) -> str:
+        """Get the metrics as Prometheus text format.
 
         Returns:
-            CollectorRegistry instance.
+            Prometheus-compatible metrics text.
         """
-        return self._registry
+        from prometheus_client import generate_latest
+
+        return generate_latest(self._registry).decode()
 
     def record_readiness_update(self, status: str, site: str) -> None:
         """Record a readiness update event.

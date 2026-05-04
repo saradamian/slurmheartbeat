@@ -5,7 +5,61 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.1.1] - 2026-01-XX
+## [0.3.0] - 2026-05-02
+
+### Security Fixes (Audit 2026-05-02)
+
+#### Critical
+- **Fixed outgoing heartbeat signing** - Added `tls` field to `HeartbeatClientConfig` and proper key object handling
+  - `sign()` now accepts both `RSAPrivateKey` objects and PEM bytes
+  - Fail-closed behavior on signing errors (no unsigned messages sent)
+  - Client TLS configuration properly parsed from YAML
+
+#### High
+- **Fixed mTLS peer certificate extraction** in `publisher.py` and `receiver.py`
+  - Properly handles both dict format (standard SSL) and DER bytes format
+  - Real mTLS client certificates now accepted instead of being rejected
+
+- **Fixed authorization wiring** in `receiver.py`
+  - `_allowed_members` now initialized from `config.allowed_sites`
+  - Authorization checks work correctly with configured site list
+
+- **Fixed Prometheus registry** - Custom registry now passed to `start_http_server`
+  - `slurmheartbeat_*` metrics now properly exposed
+
+- **Fixed `client.enabled` flag** - Properly respected in `main.py`
+  - Outgoing heartbeats disabled when `client.enabled: false`
+  - Readiness generation continues independently
+
+#### Medium
+- **Fixed metrics singleton** - Shared `MetricsServer` instance passed to `ReadinessPublisher`
+  - No double-starting of metrics server
+
+- **Fixed signal derivation** - Readiness signals derived from actual health checks
+  - `slurmctld_reachable` and `maintenance` derived from actual checks instead of hardcoded
+
+#### Low
+- **Added client TLS section** to `config.example.yaml`
+  - Complete example configuration for client-side mTLS and signing
+
+### Improvements
+- **Documentation consolidation** - Removed redundant verification/implementation reports
+  - Key information merged into README.md and CHANGELOG.md
+  - Reduced from 23 to 7 core documentation files
+
+### Tests
+- **106/106 tests passing** (up from 52)
+- **Ruff linting clean** - All checks pass
+- **Module execution verified** - `python -m slurmheartbeat --help` works
+
+### Known Limitations
+- Legacy `HeartbeatMessage` protocol still supported alongside EFP `ReadinessMessage`
+- End-to-end integration tests with real TLS certificates not yet implemented
+- `verify_signature()` still expects PEM bytes (not key objects)
+
+---
+
+## [0.2.0] - 2026-01-XX
 
 ### Security Fixes
 
