@@ -97,6 +97,7 @@ class HeartbeatDaemon:
 
         if self.mode in ("publisher", "both") and self.config.server.enabled:
             # Pass shared metrics instance to publisher (may be None if prometheus disabled)
+            # Also pass signing_key_file from server config
             self.publisher = ReadinessPublisher(
                 config=self.config.server,
                 site_id=self.config.cluster.id,
@@ -104,6 +105,7 @@ class HeartbeatDaemon:
                 fed_state="UNKNOWN",
                 ttl_seconds=90,
                 metrics=self.metrics,  # Pass shared metrics instance (or None)
+                signing_key_file=self.config.server.signing_key_file,
             )
 
         # Only start legacy P2P receiver if explicitly enabled (feature flag)

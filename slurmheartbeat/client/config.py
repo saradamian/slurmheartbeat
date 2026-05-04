@@ -75,6 +75,8 @@ class ServerConfig:
     connection_timeout: int = 30
     allowed_sites: list[str] = field(default_factory=list)
     enable_legacy_p2p: bool = False  # Feature flag, default to False per audit
+    peer_public_keys: dict[str, str] = field(default_factory=dict)  # For signature verification
+    signing_key_file: str | None = None  # Optional key for message signing
 
 
 @dataclass
@@ -228,6 +230,9 @@ class ClientConfig:
                 max_connections=server_data.get("max_connections", 100),
                 connection_timeout=server_data.get("connection_timeout", 30),
                 allowed_sites=server_data.get("allowed_sites", []),
+                enable_legacy_p2p=server_data.get("enable_legacy_p2p", False),
+                peer_public_keys=server_data.get("peer_public_keys", {}),
+                signing_key_file=server_data.get("signing_key_file"),
             )
 
         # Parse monitoring section
@@ -271,9 +276,7 @@ class ClientConfig:
             if "peer_public_keys" in fed_data:
                 peer_keys = fed_data.get("peer_public_keys", {})
                 config.client.federation.peer_public_keys = peer_keys
-                # Also store in server config so receiver can access it
-                if not hasattr(config.server, "peer_public_keys"):
-                    config.server.peer_public_keys = {}
+                # Update server config (already parsed above)
                 config.server.peer_public_keys.update(peer_keys)
 
         return config
