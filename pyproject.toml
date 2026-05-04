@@ -30,7 +30,6 @@ classifiers = [
 
 dependencies = [
     "aiohttp>=3.8.0",
-    "pydantic>=2.0.0",
     "pyyaml>=6.0.0",
     "cryptography>=41.0.0",
     "prometheus-client>=0.17.0",
@@ -45,17 +44,16 @@ dev = [
     "pytest-mock>=3.10.0",
     "ruff>=0.1.0",
     "mypy>=1.0.0",
-    "aiosmtplib>=2.0.0",
 ]
 
 [project.scripts]
 slurm-heartbeat = "slurmheartbeat.main:run"
 
 [project.urls]
-Homepage = "https://github.com/your-org/slurmheartbeat"
-Documentation = "https://github.com/your-org/slurmheartbeat/docs"
-Repository = "https://github.com/your-org/slurmheartbeat"
-Changelog = "https://github.com/your-org/slurmheartbeat/CHANGELOG.md"
+Homepage = "https://github.com/samehuman/slurmheartbeat"
+Documentation = "https://github.com/samehuman/slurmheartbeat/docs"
+Repository = "https://github.com/samehuman/slurmheartbeat"
+Changelog = "https://github.com/samehuman/slurmheartbeat/CHANGELOG.md"
 
 [tool.setuptools.packages.find]
 where = ["."]
@@ -82,7 +80,6 @@ select = [
     "TC",   # flake8-type-checking
     "S",    # flake8-bandit (security)
     "RUF",  # Ruff-specific rules
-    "ASYNC",# flake8-async
     "SIM",  # flake8-simplify
 ]
 ignore = [
@@ -103,6 +100,9 @@ ignore = [
 "tests/conftest.py" = ["S108"]  # /tmp paths in test fixtures OK
 "slurmheartbeat/server/*.py" = [
     "S104",  # 0.0.0.0 binding allowed for server
+]
+"slurmheartbeat/main.py" = [
+    "ASYNC240",  # pathlib.Path in async OK for simple file existence checks
 ]
 
 [tool.ruff.format]

@@ -237,17 +237,15 @@ class HeartbeatReceiver:
         self._running = False
 
         # Load allowed members from ServerConfig.allowed_sites
-        # and peer public keys from FederationConfig.peer_public_keys
+        # and peer public keys from ServerConfig.peer_public_keys
         if hasattr(config, "allowed_sites") and config.allowed_sites:
             self.state.set_allowed_members(config.allowed_sites)
 
-        # Load peer public keys from federation config if available
-        if hasattr(config, "federation"):
-            federation_config = getattr(config, "federation", None)
-            if federation_config:
-                peer_public_keys = getattr(federation_config, "peer_public_keys", {})
-                for peer_name, public_key_pem in peer_public_keys.items():
-                    self.state.set_peer_public_key(peer_name, public_key_pem)
+        # Load peer public keys from server config if available
+        if hasattr(config, "peer_public_keys") and config.peer_public_keys:
+            peer_public_keys = getattr(config, "peer_public_keys", {})
+            for peer_name, public_key_pem in peer_public_keys.items():
+                self.state.set_peer_public_key(peer_name, public_key_pem)
 
     async def _handle_heartbeat(self, request: web.Request) -> web.Response:
         """Handle incoming heartbeat request.
@@ -290,26 +288,9 @@ class HeartbeatReceiver:
                         cert = ssl_obj.getpeercert(binary_form=False)
 
                 if cert and isinstance(cert, dict):
-                    # Extract CN from certificate
+                    # Extract CN from certificate using shared helper
                     subject = cert.get("subject", [])
-                    # subject format: ((('commonName', 'test-cluster'),),)
-                    for attr_tuple in subject:
-                        if attr_tuple and len(attr_tuple) >= 2:
-                            key = (
-                                attr_tuple[0][0]
-                                if isinstance(attr_tuple[0], tuple)
-                                else attr_tuple[0]
-                            )
-                            value = (
-                                attr_tuple[0][1]
-                                if isinstance(attr_tuple[0], tuple) and len(attr_tuple[0]) >= 2
-                                else attr_tuple[1]
-                                if len(attr_tuple) >= 2
-                                else None
-                            )
-                            if key == "commonName":
-                                peer_name = value
-                                break
+                    peer_name = self._extract_cn_from_subject(subject)
 
             # Parse JSON body
             try:
@@ -373,6 +354,36 @@ class HeartbeatReceiver:
         except Exception as e:
             logger.error(f"Error handling heartbeat: {e}")
             return web.json_response({"error": "Internal server error"}, status=500)
+
+    def _extract_cn_from_subject(self, subject: list) -> str | None:
+        """Extract commonName from certificate subject, handling nested RDN format.
+
+        Args:
+            subject: Subject from getpeercert(), can be nested RDN tuples
+
+        Returns:
+            CN value or None
+        """
+        # Handle nested RDN format: ((("commonName", "value"),), (("organizationName", "value"),),)
+        # Each RDN is a tuple of attribute tuples
+        for rdn in subject:
+            # rdn can be:
+            # 1. Nested: (("commonName", "value"),) - tuple of attribute tuples
+            # 2. Flattened: ("commonName", "value") - single attribute tuple
+            if isinstance(rdn, tuple):
+                # Check if this is a nested RDN (tuple of tuples)
+                if len(rdn) > 0 and isinstance(rdn[0], tuple):
+                    # Nested format: iterate through attributes in this RDN
+                    for attr in rdn:
+                        if isinstance(attr, tuple) and len(attr) >= 2:
+                            key, value = attr[0], attr[1]
+                            if key == "commonName":
+                                return value
+                else:
+                    # Flattened format: rdn itself is ("commonName", "value")
+                    if len(rdn) >= 2 and rdn[0] == "commonName":
+                        return rdn[1]
+        return None
 
     async def _handle_health(self, request: web.Request) -> web.Response:
         """Handle health check request.

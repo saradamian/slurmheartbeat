@@ -1,12 +1,11 @@
 """Slurm metrics collector with EFP readiness support.
 
-This collector reads local Slurm state through multiple sources:
-1. OpenMetrics (preferred) - native Slurm metrics endpoint
-2. scontrol --json - Slurm control interface
-3. sinfo/squeue - Fallback for older Slurm versions
-4. slurmrestd - REST API if available
+This collector reads local Slurm state through the Slurm REST API (slurmrestd).
+Per EFP recommendation: The collector avoids user/job/account details.
 
-Per EFP recommendation: The collector should avoid user/job/account details.
+Note: This implementation uses slurmrestd HTTP API only. Other fallbacks
+(OpenMetrics, scontrol --json, sinfo/squeue) are documented as future work
+but not yet implemented.
 """
 
 from __future__ import annotations

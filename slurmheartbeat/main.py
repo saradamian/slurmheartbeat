@@ -70,8 +70,11 @@ class HeartbeatDaemon:
         self._running = True
 
         # Initialize metrics server FIRST, before any components that depend on it
+        # This ensures configured metrics are used instead of default singleton
         if self.config.monitoring.prometheus.enabled:
             self.metrics = MetricsServer(self.config.monitoring.prometheus)
+            await self.metrics.start()
+            logger.info(f"Metrics server started on port {self.config.monitoring.prometheus.port}")
 
         # Initialize components based on mode
         # In publisher mode, we still need collector/normalizer to generate readiness
@@ -107,11 +110,11 @@ class HeartbeatDaemon:
         if (
             self.mode == "both"
             and self.config.server.enabled
-            and getattr(self.config.server, "enable_legacy_p2p", True)
+            and getattr(self.config.server, "enable_legacy_p2p", False)
         ):
             self.receiver = HeartbeatReceiver(self.config.server)
 
-        # Start components
+        # Start components (publisher starts its own HTTP server, metrics already started above)
         if self.receiver:
             await self.receiver.start()
             logger.info(
@@ -123,10 +126,6 @@ class HeartbeatDaemon:
             logger.info(
                 f"Readiness publisher started on {self.config.server.listen_address}:{self.config.server.listen_port}"
             )
-
-        if self.metrics:
-            await self.metrics.start()
-            logger.info(f"Metrics server started on port {self.config.monitoring.prometheus.port}")
 
         # Update peer status metrics on startup
         if self.metrics and self.receiver:
@@ -188,7 +187,11 @@ class HeartbeatDaemon:
                     metrics = await self.collector.collect()
 
                     # Derive signals from collection result (no second collection)
-                    slurmctld_reachable = metrics is not None and metrics.node_stats.total > 0
+                    # Check if collection produced valid data
+                    slurmctld_reachable = (
+                        metrics is not None
+                        and metrics.node_stats.total > 0
+                    )
                     maintenance = await self._check_maintenance_state()
 
                     # Normalize to EFP readiness schema
@@ -308,11 +311,11 @@ class HeartbeatDaemon:
         Returns:
             True if in maintenance mode, False otherwise.
         """
-        # Check for maintenance file
-        maintenance_file = "/var/run/slurm/heartbeat/maintenance"
+        # Check for maintenance file using standard pathlib
+        # Note: Simple file existence check doesn't block event loop
+        maintenance_file = Path("/var/run/slurm/heartbeat/maintenance")
         try:
-            import anyio
-            return await anyio.Path(maintenance_file).exists()
+            return maintenance_file.exists()
         except Exception:
             return False
 

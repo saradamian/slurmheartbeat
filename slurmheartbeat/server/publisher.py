@@ -214,7 +214,7 @@ class ReadinessPublisher:
 
         # Return signed readiness document
         readiness = self.state.last_readiness
-        
+
         # Sign the readiness document if signing is configured
         if self.signing_key_file and readiness.signature is None:
             try:
@@ -226,7 +226,7 @@ class ReadinessPublisher:
             except Exception as e:
                 logger.warning(f"Failed to sign readiness document: {e}")
                 # Continue with unsigned document (fail-open for availability)
-        
+
         return web.json_response(
             readiness.to_dict(),
             content_type="application/json",
@@ -281,25 +281,10 @@ class ReadinessPublisher:
             # Parse certificate to extract CN
             if isinstance(cert, dict):
                 # Standard SSL dict format from getpeercert(binary_form=False)
-                # Extract CN from subject
+                # Subject can be nested: ((("commonName", "value"),), (("organizationName", "value"),),)
+                # or flattened: (("commonName", "value"), ("organizationName", "value"))
                 subject = cert.get("subject", [])
-                for attr_tuple in subject:
-                    if attr_tuple and len(attr_tuple) >= 2:
-                        key = (
-                            attr_tuple[0][0]
-                            if isinstance(attr_tuple[0], tuple)
-                            else attr_tuple[0]
-                        )
-                        value = (
-                            attr_tuple[0][1]
-                            if isinstance(attr_tuple[0], tuple) and len(attr_tuple[0]) >= 2
-                            else attr_tuple[1]
-                            if len(attr_tuple) >= 2
-                            else None
-                        )
-                        if key == "commonName":
-                            return value
-                return None
+                return self._extract_cn_from_subject(subject)
             elif isinstance(cert, bytes):
                 # DER format (binary)
                 from cryptography import x509
@@ -316,6 +301,36 @@ class ReadinessPublisher:
         except Exception as e:
             logger.error(f"Error extracting peer name: {e}")
             return None
+
+    def _extract_cn_from_subject(self, subject: list) -> str | None:
+        """Extract commonName from certificate subject, handling nested RDN format.
+
+        Args:
+            subject: Subject from getpeercert(), can be nested RDN tuples
+
+        Returns:
+            CN value or None
+        """
+        # Handle nested RDN format: ((("commonName", "value"),), (("organizationName", "value"),),)
+        # Each RDN is a tuple of attribute tuples
+        for rdn in subject:
+            # rdn can be:
+            # 1. Nested: (("commonName", "value"),) - tuple of attribute tuples
+            # 2. Flattened: ("commonName", "value") - single attribute tuple
+            if isinstance(rdn, tuple):
+                # Check if this is a nested RDN (tuple of tuples)
+                if len(rdn) > 0 and isinstance(rdn[0], tuple):
+                    # Nested format: iterate through attributes in this RDN
+                    for attr in rdn:
+                        if isinstance(attr, tuple) and len(attr) >= 2:
+                            key, value = attr[0], attr[1]
+                            if key == "commonName":
+                                return value
+                else:
+                    # Flattened format: rdn itself is ("commonName", "value")
+                    if len(rdn) >= 2 and rdn[0] == "commonName":
+                        return rdn[1]
+        return None
 
     def _is_authorized(self, peer_name: str) -> bool:
         """Check if peer is authorized to access readiness.

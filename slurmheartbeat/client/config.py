@@ -73,6 +73,7 @@ class ServerConfig:
     max_connections: int = 100
     connection_timeout: int = 30
     allowed_sites: list[str] = field(default_factory=list)
+    enable_legacy_p2p: bool = False  # Feature flag, default to False per audit
 
 
 @dataclass
@@ -263,8 +264,14 @@ class ClientConfig:
         # Do NOT overwrite server.allowed_sites - keep them separate
         if "federation" in data:
             fed_data = data["federation"]
-            # Only load peer_public_keys for signature verification
+            # Load peer_public_keys for signature verification
+            # Store in both client.federation (for sender) and server (for receiver)
             if "peer_public_keys" in fed_data:
-                config.client.federation.peer_public_keys = fed_data.get("peer_public_keys", {})
+                peer_keys = fed_data.get("peer_public_keys", {})
+                config.client.federation.peer_public_keys = peer_keys
+                # Also store in server config so receiver can access it
+                if not hasattr(config.server, "peer_public_keys"):
+                    config.server.peer_public_keys = {}
+                config.server.peer_public_keys.update(peer_keys)
 
         return config

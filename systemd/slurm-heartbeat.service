@@ -1,6 +1,6 @@
 [Unit]
 Description=Slurm Heartbeat EFP Readiness Publisher
-Documentation=https://github.com/your-org/slurmheartbeat
+Documentation=https://github.com/samehuman/slurmheartbeat
 After=network.target slurmctld.service
 
 [Service]

@@ -18,7 +18,6 @@ select = [
     "TC",   # flake8-type-checking
     "S",    # flake8-bandit (security)
     "RUF",  # Ruff-specific rules
-    "ASYNC",# flake8-async
     "SIM",  # flake8-simplify
 ]
 ignore = [

@@ -50,7 +50,7 @@ The system produces a compact readiness document with:
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-org/slurmheartbeat.git
+git clone https://github.com/samehuman/slurmheartbeat.git
 cd slurmheartbeat
 
 # Create virtual environment
@@ -331,5 +331,5 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENS
 
 ## Contact
 
-- Project Issues: [GitHub Issues](https://github.com/your-org/slurmheartbeat/issues)
-- Email: [your-email@example.com](mailto:your-email@example.com)
+- Project Issues: [GitHub Issues](https://github.com/samehuman/slurmheartbeat/issues)
+- Email: [contact@samehuman.org](mailto:contact@samehuman.org)

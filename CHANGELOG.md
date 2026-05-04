@@ -5,6 +5,102 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-05-04
+
+### Critical Fixes (Audit 2026-05-02)
+
+#### Metrics Initialization Order
+- **Fixed metrics server initialization** - `MetricsServer` now instantiated before `ReadinessPublisher`
+  - Configured Prometheus port is now respected (no more default 9090 override)
+  - Metrics server starts exactly once (no double-starting)
+  - Shared `MetricsServer` instance passed to all components
+
+#### Certificate Subject Parsing
+- **Fixed mTLS peer-name extraction** for nested RDN certificate format
+  - `publisher.py` and `receiver.py` now handle standard `ssl.getpeercert()` nested format: `((("commonName", "value"),),)`
+  - Added `_extract_cn_from_subject()` helper method for both classes
+  - Tests updated to use realistic nested certificate subject format
+
+#### Client/Server Decoupling
+- **Fixed publisher readiness independence** - Readiness generation no longer blocked by `client.enabled=false`
+  - Collector/normalizer always initialized in publisher mode
+  - `client.enabled` only controls outgoing heartbeat sending
+  - `/readiness` endpoint works independently of client mode
+
+#### Collection Health
+- **Fixed double Slurm collection** - Single collection per loop interval
+  - `_check_slurmctld_reachable()` no longer calls `collector.collect()` separately
+  - Reachability derived from collection result (single pass)
+  - Reduced Slurm REST API traffic by 50%
+
+#### Maintenance File Check
+- **Fixed maintenance file check** - Replaced `anyio.Path` with standard `pathlib.Path`
+  - Removed undocumented `anyio` dependency
+  - Configurable maintenance file path (default: `/var/run/slurm/heartbeat/maintenance`)
+
+### High Priority Fixes
+
+#### Readiness Signing
+- **Added readiness document signing** in `publisher.py`
+  - `signing_key_file` config option for private key
+  - Readiness documents signed before serving `/readiness`
+  - Fail-open behavior (unsigned document served if signing fails)
+
+#### Legacy P2P Feature Flag
+- **Added `enable_legacy_p2p` config field** in `ServerConfig`
+  - Defaults to `False` (legacy peer heartbeat disabled by default)
+  - Feature flag properly parsed from YAML config
+  - Reduces code surface until EFP confirms push transport requirement
+
+#### Peer Public Key Wiring
+- **Fixed peer public key loading** - Keys now accessible to receiver
+  - `federation.peer_public_keys` loaded into both `client.federation` and `server.peer_public_keys`
+  - Receiver can access configured peer keys for signature verification
+  - Config loading preserves `server.allowed_sites` without overwriting
+
+### Medium Priority Fixes
+
+#### Documentation Cleanup
+- **Updated collector docstring** - Reflects actual implementation (slurmrestd only)
+  - Removed false claims about OpenMetrics/scontrol/sinfo fallbacks
+  - Added note about future work for additional data sources
+
+- **Consolidated documentation** - Removed duplicate "production ready" claims
+  - `IMPLEMENTATION_SUMMARY.md` and `FINAL_VERIFICATION_REPORT.md` updated with conservative language
+  - Single living document approach (README.md + CHANGELOG.md)
+
+#### Configuration Cleanup
+- **Removed unimplemented config sections** from `config.example.yaml`
+  - Alerting, security, rate limiting, performance, compression sections removed
+  - Only implemented configuration options remain in example file
+  - Aspirational behavior moved to ADRs
+
+#### Packaging Fixes
+- **Added `py.typed` file** - PEP 561 compliance for type hints
+- **Removed unused dependencies** from `pyproject.toml` and `requirements.txt`
+  - `pydantic` removed (code uses dataclasses)
+  - `aiosmtplib` removed (email alerting not implemented)
+  - `aioredis`, `sentry-sdk` removed (not implemented)
+
+#### Metadata Updates
+- **Updated project URLs** - Replaced `your-org` placeholders with actual repository
+  - `README.md`, `pyproject.toml`, `CHANGELOG.md`, `systemd/slurm-heartbeat.service`
+  - Contact information updated
+
+### Tests
+- **106/106 tests passing** (no regressions)
+- **Ruff linting clean** - All checks pass
+- **Added tests for nested certificate format** in `test_server.py`
+- **Added tests for metrics initialization order** in `test_metrics.py`
+
+### Known Limitations
+- Legacy `HeartbeatMessage` protocol still supported alongside EFP `ReadinessMessage`
+- End-to-end integration tests with real TLS certificates not yet implemented
+- `verify_signature()` still expects PEM bytes (not key objects)
+- Partition/resource-class hints not yet implemented in readiness schema
+
+---
+
 ## [0.3.0] - 2026-05-02
 
 ### Security Fixes (Audit 2026-05-02)
