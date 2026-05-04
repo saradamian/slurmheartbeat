@@ -191,6 +191,7 @@ class HeartbeatDaemon:
                     slurmctld_reachable = (
                         metrics is not None
                         and metrics.node_stats.total > 0
+                        and metrics.cluster_name != "unknown"
                     )
                     maintenance = await self._check_maintenance_state()
 

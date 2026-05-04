@@ -47,6 +47,8 @@ client:
     cert_file: "/etc/slurm/heartbeat/cert.pem"
     key_file: "/etc/slurm/heartbeat/key.pem"
     ca_file: "/etc/slurm/heartbeat/ca.pem"
+    # Optional: Separate key file for message signing (if different from TLS key)
+    # signing_key_file: "/etc/slurm/heartbeat/signing-key.pem"
     
   # Federation peers to send heartbeats to
   federation:

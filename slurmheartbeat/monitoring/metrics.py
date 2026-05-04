@@ -169,6 +169,11 @@ class MetricsServer:
             logger.info("Prometheus metrics disabled")
             return
 
+        # Idempotence guard - prevent double-start
+        if self._running:
+            logger.warning("Metrics server already running, skipping start")
+            return
+
         logger.info(
             f"Starting Prometheus metrics server on {self.config.listen_address}:{self.config.port}"
         )

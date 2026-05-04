@@ -231,20 +231,24 @@ class ReadinessMessage:
 
         return now > expiry
 
-    def sign(self, private_key_pem: bytes) -> None:
+    def sign(self, private_key) -> None:
         """Sign the readiness message with a private key.
 
         Args:
-            private_key_pem: Private key in PEM format (bytes).
+            private_key: Private key object (cryptography.hazmat.primitives.asymmetric.rsa.RSAPrivateKey).
         """
         from cryptography.hazmat.primitives import hashes, serialization
         from cryptography.hazmat.primitives.asymmetric import padding
 
         message_json = self.to_json()
-        private_key = serialization.load_pem_private_key(
-            private_key_pem,
-            password=None,
-        )
+
+        # If a PEM bytes string is passed, load it
+        if isinstance(private_key, bytes):
+            private_key = serialization.load_pem_private_key(
+                private_key,
+                password=None,
+            )
+
         signature = private_key.sign(message_json.encode(), padding.PKCS1v15(), hashes.SHA256())
         self.signature = signature.hex()
 

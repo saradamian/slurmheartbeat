@@ -60,6 +60,7 @@ class TLSConfig:
     client_auth: str = "required"
     min_version: str = "1.3"
     max_version: str = "1.3"
+    signing_key_file: str | None = None  # Optional separate key for message signing
 
 
 @dataclass
@@ -178,6 +179,7 @@ class ClientConfig:
                     client_auth=client_tls_data.get("client_auth", "required"),
                     min_version=client_tls_data.get("min_version", "1.3"),
                     max_version=client_tls_data.get("max_version", "1.3"),
+                    signing_key_file=client_tls_data.get("signing_key_file"),
                 )
 
             config.client = HeartbeatClientConfig(
