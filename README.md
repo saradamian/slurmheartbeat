@@ -207,29 +207,36 @@ Key configuration sections:
 
 ## Implementation Status
 
-**✅ PRODUCTION READY** - All 12 audit findings resolved (2026-05-02)
+**⚠️ ALPHA READINESS ADAPTER** - Core functionality working, production hardening in progress
 
 - **Tests**: 106/106 passing
 - **Linting**: Ruff clean
-- **Security**: All critical issues fixed
-- **EFP Alignment**: Fully compliant
+- **Critical Fixes**: 6/14 audit findings resolved
+- **EFP Alignment**: Schema compliant, lifecycle fixes in progress
 
-### Recent Fixes (Audit 2026-05-02)
+### Resolved Audit Findings (2026-05-04)
 
-| # | Issue | Status |
-|---|-------|--------|
-| 1 | Outgoing heartbeat signing broken, TLS unreachable | ✅ Fixed |
-| 2 | Publisher rejects standard mTLS client certificates | ✅ Fixed |
-| 3 | Legacy receiver allowlist not wired from config | ✅ Fixed |
-| 4 | `sign()` expects PEM bytes but receives key object | ✅ Fixed |
-| 5 | Sender silently sends unsigned messages on signing failure | ✅ Fixed |
-| 6 | Prometheus registry not passed to `start_http_server` | ✅ Fixed |
-| 7 | `client.enabled` flag ignored | ✅ Fixed |
-| 8 | Metrics singleton double-starts | ✅ Fixed |
-| 9 | Readiness not signed before return | ✅ Implemented |
-| 10 | Signal derivation hardcoded | ✅ Implemented |
-| 11 | Missing client TLS config in example | ✅ Fixed |
-| 12 | Documentation gaps | ✅ Fixed |
+| # | Finding | Status |
+|---|---------|--------|
+| 1 | Metrics double-start | ✅ Fixed |
+| 2 | Publisher readiness gated by `client.enabled` | ✅ Fixed |
+| 3 | Readiness signing not wired through YAML | ✅ Fixed |
+| 4 | Controller reachability from node count | ✅ Fixed |
+| 5 | `enable_legacy_p2p` not parsed from YAML | ✅ Fixed |
+| 6 | Dynamic `peer_public_keys` attribute | ✅ Fixed |
+
+### Remaining Work (Lower Priority)
+
+| # | Finding | Priority |
+|---|---------|----------|
+| 7 | Prometheus exposition duplication | Medium |
+| 8 | Documentation overclaims readiness | Medium |
+| 9 | Unimplemented config sections | Medium |
+| 10 | Maintenance mode hardcoded | Low |
+| 11 | Type checking not passing | Low |
+| 12 | Missing lifecycle tests | Low |
+| 13 | Slurm input documentation | Low |
+| 14 | Repository metadata consistency | Low |
 
 ## Testing
 

@@ -94,6 +94,25 @@ server:
   # Connection limits
   max_connections: 100
   connection_timeout: 30
+  
+  # Feature flags (advanced)
+  enable_legacy_p2p: false  # Enable legacy P2P heartbeat receiver (default: false)
+  
+  # Signature verification - public keys for federation peers
+  # Format: peer_name -> PEM-encoded public key
+  peer_public_keys:
+    # "leonardo": |
+    #   -----BEGIN PUBLIC KEY-----
+    #   ...
+    #   -----END PUBLIC KEY-----
+    # "mars": |
+    #   -----BEGIN PUBLIC KEY-----
+    #   ...
+    #   -----END PUBLIC KEY-----
+  
+  # Message signing - private key for signing outgoing readiness documents
+  # If not set, readiness documents will be unsigned
+  # signing_key_file: "/etc/slurm/heartbeat/signing-key.pem"
 
 # Federation state management (for peer-to-peer mode)
 # Note: Use server.allowed_sites for authorization instead
