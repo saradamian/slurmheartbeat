@@ -62,19 +62,23 @@ class ReadinessNormalizer:
     def normalize(
         self,
         metrics: ClusterMetrics,
-        slurmctld_reachable: bool = True,
+        slurmctld_reachable: bool | None = None,
         maintenance: bool = False,
     ) -> ReadinessMessage:
         """Normalize Slurm metrics to readiness message.
 
         Args:
             metrics: Collected Slurm metrics
-            slurmctld_reachable: Whether slurmctld is reachable
+            slurmctld_reachable: Whether slurmctld is reachable. If None, derived from metrics.collect_success
             maintenance: Whether the site is in maintenance mode
 
         Returns:
             ReadinessMessage aligned with EFP schema
         """
+        # Derive slurmctld_reachable from collection success if not explicitly provided
+        if slurmctld_reachable is None:
+            slurmctld_reachable = metrics.collect_success
+
         # Determine readiness status based on signals
         status, reason = self._determine_status(metrics, slurmctld_reachable, maintenance)
 

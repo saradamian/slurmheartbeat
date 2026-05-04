@@ -75,6 +75,7 @@ class ClusterMetrics:
     partition_stats: list[PartitionStats] = field(default_factory=list)
     job_stats: JobStats = field(default_factory=JobStats)
     resource_usage: ResourceUsage = field(default_factory=ResourceUsage)
+    collect_success: bool = False  # True if collection succeeded without errors
 
 
 class SlurmCollector:
@@ -107,18 +108,27 @@ class SlurmCollector:
             ClusterMetrics with current state.
         """
         metrics = ClusterMetrics()
+        errors = []
 
         try:
             # Collect in parallel where possible
-            await asyncio.gather(
+            results = await asyncio.gather(
                 self._collect_cluster_info(metrics),
                 self._collect_node_stats(metrics),
                 self._collect_partition_stats(metrics),
                 self._collect_job_stats(metrics),
                 return_exceptions=True,
             )
+            # Track errors
+            for result in results:
+                if isinstance(result, Exception):
+                    errors.append(result)
         except Exception as e:
             logger.error(f"Error collecting metrics: {e}")
+            errors.append(e)
+
+        # Set collect_success based on whether we got any data
+        metrics.collect_success = len(errors) == 0 or (metrics.cluster_name != "unknown" and metrics.node_stats.total > 0)
 
         return metrics
 

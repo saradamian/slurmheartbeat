@@ -52,6 +52,10 @@ class MetricsServer:
         # Use a custom registry for testing
         self._registry = CollectorRegistry()
 
+        # Only register metrics if enabled
+        if not self.config.enabled:
+            return
+
         # Define metrics
         # Counters
         self.heartbeat_sent = Counter(

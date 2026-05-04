@@ -19,7 +19,7 @@ from aiohttp import web
 from slurmheartbeat.monitoring.metrics import MetricsServer
 
 if TYPE_CHECKING:
-    from slurmheartbeat.client.config import ServerConfig
+    from slurmheartbeat.client.config import PrometheusConfig, ServerConfig
     from slurmheartbeat.protocol.schema import ReadinessMessage
 
 logger = logging.getLogger(__name__)
@@ -56,6 +56,7 @@ class ReadinessPublisher:
         ttl_seconds: int = 90,
         metrics: MetricsServer | None = None,
         signing_key_file: str | None = None,
+        prometheus_config: PrometheusConfig | None = None,
     ):
         """Initialize the readiness publisher.
 
@@ -67,6 +68,7 @@ class ReadinessPublisher:
             ttl_seconds: Time-to-live for readiness documents
             metrics: Optional metrics server instance (uses default if not provided)
             signing_key_file: Path to private key for signing readiness documents (optional)
+            prometheus_config: Prometheus config for creating default metrics (if metrics=None)
         """
         self.config = config
         self.site_id = site_id
@@ -74,6 +76,7 @@ class ReadinessPublisher:
         self.fed_state = fed_state
         self.ttl_seconds = ttl_seconds
         self.signing_key_file = signing_key_file
+        self._prometheus_config = prometheus_config
 
         self.state = ReadinessState(
             site_id=site_id,
@@ -81,15 +84,20 @@ class ReadinessPublisher:
             fed_state=fed_state,
         )
 
-        # Use provided metrics or create default
-        self._metrics = metrics if metrics else MetricsServer()
+        # Use provided metrics or create default only if prometheus is enabled
+        if metrics:
+            self._metrics = metrics
+        elif prometheus_config and prometheus_config.enabled:
+            self._metrics = MetricsServer(prometheus_config)
+        else:
+            self._metrics = None
         self._app: web.Application | None = None
         self._runner: web.AppRunner | None = None
         self._site: web.TCPSite | None = None
         self._running = False
 
     @property
-    def metrics(self) -> MetricsServer:
+    def metrics(self) -> MetricsServer | None:
         """Get the metrics server instance."""
         return self._metrics
 
@@ -102,8 +110,9 @@ class ReadinessPublisher:
         self._app.router.add_get("/metrics", self._handle_metrics)
         self._app.router.add_get("/health", self._handle_health)
 
-        # Start metrics server
-        await self._metrics.start()
+        # Start metrics server if available
+        if self._metrics:
+            await self._metrics.start()
 
         # Start HTTP server with TLS if configured
         self._runner = web.AppRunner(self._app)
@@ -152,8 +161,9 @@ class ReadinessPublisher:
         if self._runner:
             await self._runner.cleanup()
 
-        # Stop metrics server
-        await self._metrics.stop()
+        # Stop metrics server if available
+        if self._metrics:
+            await self._metrics.stop()
 
         logger.info("Readiness publisher stopped")
 
@@ -165,7 +175,8 @@ class ReadinessPublisher:
         """
         self.state.last_readiness = readiness
         self.state.last_update = datetime.utcnow()
-        self._metrics.record_readiness_update(readiness.status.value, self.site_id)
+        if self._metrics:
+            self._metrics.record_readiness_update(readiness.status.value, self.site_id)
         logger.debug(f"Readiness updated: {readiness.status.value}")
 
     async def _handle_readiness(self, request: web.Request) -> web.Response:
@@ -237,6 +248,11 @@ class ReadinessPublisher:
 
         Returns Prometheus-compatible metrics.
         """
+        if not self._metrics:
+            return web.Response(
+                text="# Prometheus metrics disabled\n",
+                content_type="text/plain",
+            )
         metrics_text = self._metrics.get_metrics()
         return web.Response(
             text=metrics_text,

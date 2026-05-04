@@ -97,7 +97,7 @@ class HeartbeatDaemon:
 
         if self.mode in ("publisher", "both") and self.config.server.enabled:
             # Pass shared metrics instance to publisher (may be None if prometheus disabled)
-            # Also pass signing_key_file from server config
+            # Also pass signing_key_file from server config and prometheus config
             self.publisher = ReadinessPublisher(
                 config=self.config.server,
                 site_id=self.config.cluster.id,
@@ -106,6 +106,7 @@ class HeartbeatDaemon:
                 ttl_seconds=90,
                 metrics=self.metrics,  # Pass shared metrics instance (or None)
                 signing_key_file=self.config.server.signing_key_file,
+                prometheus_config=self.config.monitoring.prometheus,
             )
 
         # Only start legacy P2P receiver if explicitly enabled (feature flag)
@@ -188,13 +189,9 @@ class HeartbeatDaemon:
                 if self.collector:
                     metrics = await self.collector.collect()
 
-                    # Derive signals from collection result (no second collection)
-                    # Check if collection produced valid data
-                    slurmctld_reachable = (
-                        metrics is not None
-                        and metrics.node_stats.total > 0
-                        and metrics.cluster_name != "unknown"
-                    )
+                    # Derive slurmctld_reachable from collection success
+                    # Use the collect_success flag from the collector
+                    slurmctld_reachable = metrics.collect_success if metrics else False
                     maintenance = await self._check_maintenance_state()
 
                     # Normalize to EFP readiness schema

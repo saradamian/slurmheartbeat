@@ -435,8 +435,11 @@ class TestReadinessPublisher:
     @pytest.mark.asyncio
     async def test_handle_metrics_returns_string(self):
         """Test that /metrics handler returns string, not awaits registry."""
+        from slurmheartbeat.client.config import PrometheusConfig
+
         config = ServerConfig()
-        publisher = ReadinessPublisher(config, "test-site", "test-cluster")
+        prometheus_config = PrometheusConfig(enabled=True)
+        publisher = ReadinessPublisher(config, "test-site", "test-cluster", prometheus_config=prometheus_config)
 
         # Get metrics - should return string, not awaitable
         metrics_text = publisher._metrics.get_metrics()
