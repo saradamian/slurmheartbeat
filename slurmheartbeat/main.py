@@ -136,14 +136,14 @@ class HeartbeatDaemon:
                 failures = peer_data.get("consecutive_failures", 0)
                 self.metrics.update_peer_status(peer_name, status, 0, failures)
 
-        # Start heartbeat loop if in client/publisher mode
-        # Only run if client.enabled is true (for outgoing heartbeats)
-        # Publisher mode still needs the loop for readiness generation
+        # Start heartbeat loop for readiness generation and/or outgoing heartbeats
+        # client.enabled only controls outgoing heartbeat sending, NOT readiness generation
         if self.mode in ("client", "both", "publisher"):
-            if self.config.client.enabled:
-                self._tasks.append(asyncio.create_task(self._heartbeat_loop()))
-            else:
-                logger.info("Heartbeat loop disabled (client.enabled=false)")
+            # Always start the loop for readiness generation in publisher mode
+            # client.enabled only gates the HeartbeatSender (outgoing heartbeats)
+            self._tasks.append(asyncio.create_task(self._heartbeat_loop()))
+            if not self.config.client.enabled:
+                logger.info("Outgoing heartbeats disabled (client.enabled=false), but readiness generation continues")
 
         logger.info("Slurm Heartbeat daemon started successfully")
 
