@@ -50,10 +50,10 @@ dev = [
 slurm-heartbeat = "slurmheartbeat.main:run"
 
 [project.urls]
-Homepage = "https://github.com/samehuman/slurmheartbeat"
-Documentation = "https://github.com/samehuman/slurmheartbeat/docs"
-Repository = "https://github.com/samehuman/slurmheartbeat"
-Changelog = "https://github.com/samehuman/slurmheartbeat/CHANGELOG.md"
+Homepage = "https://github.com/saradamian/slurmheartbeat"
+Documentation = "https://github.com/saradamian/slurmheartbeat/docs"
+Repository = "https://github.com/saradamian/slurmheartbeat"
+Changelog = "https://github.com/saradamian/slurmheartbeat/CHANGELOG.md"
 
 [tool.setuptools.packages.find]
 where = ["."]
