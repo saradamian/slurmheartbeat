@@ -276,6 +276,21 @@ pytest tests/test_schema.py -v
 
 **Current Status**: ✅ 117/117 tests passing
 
+## Documentation
+
+- [Installation Guide](docs/INSTALLATION.md)
+- [Deployment Guide](docs/DEPLOYMENT.md)
+- [Operations Guide](docs/OPERATIONS.md)
+- [Security Guide](docs/SECURITY.md)
+- [Testing Guide](docs/TESTING.md)
+- [Architecture Decisions](docs/ADR.md)
+- [EFP Recommendation](docs/EFP_HEARTBEAT_RECOMMENDATION.md)
+- [Contributing](CONTRIBUTING.md)
+
+### Platform-Specific Examples
+
+- [Snellius (SURF) Deployment](examples/snellius/) - User-space deployment for Snellius HPC
+
 ## Status Definitions
 
 Per EFP recommendation:
