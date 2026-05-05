@@ -13,10 +13,10 @@ This directory contains deployment examples for various EuroHPC systems and othe
 | **JUPITER** | FZ Jülich Germany | Production (systemd) | [examples/jupiter/](jupiter/) |
 | **MeluXina** | LuxProvide Luxembourg | Production (systemd) | [examples/meluxina/](meluxina/) |
 | **Vega** | Slovenia | User-space | [examples/vega/](vega/) |
-| **Isambard-AI** | UK | TBD | Coming soon |
-| **DEUCALION** | Spain | TBD | Coming soon |
-| **DAEDALUS** | Portugal | TBD | Coming soon |
-| **ARRHENIUS** | Sweden | TBD | Coming soon |
+| **Isambard-AI** | UK | User-space | [examples/isambard-ai/](isambard-ai/) |
+| **DEUCALION** | Spain | User-space | [examples/deucalion/](deucalion/) |
+| **DAEDALUS** | Portugal | User-space | [examples/daedalus/](daedalus/) |
+| **ARRHENIUS** | Sweden | User-space | [examples/arrhenius/](arrhenius/) |
 
 ## Quick Start
 
