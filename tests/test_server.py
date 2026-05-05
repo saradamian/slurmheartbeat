@@ -101,7 +101,7 @@ class TestFederationState:
             cluster=ClusterInfo(id="test", name="test", site="test"),
             status="healthy",
         )
-        unhealthy_message = HeartbeatMessage(
+        HeartbeatMessage(
             cluster=ClusterInfo(id="test", name="test", site="test"),
             status="unhealthy",
         )

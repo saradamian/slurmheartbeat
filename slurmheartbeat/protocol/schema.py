@@ -211,7 +211,7 @@ class ReadinessMessage:
 
     def is_expired(self, now: datetime | None = None) -> bool:
         """Check if the readiness message has expired based on TTL.
-        
+
         Args:
             now: Optional datetime to check against. Defaults to current time.
         """
