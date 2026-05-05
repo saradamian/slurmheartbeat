@@ -43,14 +43,14 @@ The system produces a compact readiness document with:
 ### Prerequisites
 
 - Python 3.10+
-- Slurm 21.08+ (with REST API or OpenMetrics support)
+- Slurm 21.08+ (with REST API support)
 - OpenSSL 1.1.1+ (for TLS 1.3)
 
 ### Installation
 
 ```bash
 # Clone the repository
-git clone https://github.com/samehuman/slurmheartbeat.git
+git clone https://github.com/saradamian/slurmheartbeat.git
 cd slurmheartbeat
 
 # Create virtual environment

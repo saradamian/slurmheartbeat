@@ -93,6 +93,8 @@ class HeartbeatMessage:
     - Uses minimal readiness schema (status, signals, capacity_hint)
     - Serves /readiness endpoint for pull-based access
     - Recommended for new EFP deployments
+
+    WARNING: This class is deprecated and will be removed in a future release.
     """
 
     version: str = "1.0"

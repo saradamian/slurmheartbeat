@@ -73,8 +73,8 @@ class HeartbeatDaemon:
         # This ensures configured metrics are used instead of default singleton
         if self.config.monitoring.prometheus.enabled:
             self.metrics = MetricsServer(self.config.monitoring.prometheus)
-            await self.metrics.start()
-            logger.info(f"Metrics server started on port {self.config.monitoring.prometheus.port}")
+            # Note: Metrics HTTP server is NOT started here - publisher serves /metrics endpoint
+            logger.info(f"Prometheus metrics available at port {self.config.monitoring.prometheus.port}")
 
         # Initialize components based on mode
         # In publisher mode, we still need collector/normalizer to generate readiness
@@ -311,9 +311,10 @@ class HeartbeatDaemon:
         Returns:
             True if in maintenance mode, False otherwise.
         """
-        # Check for maintenance file using standard pathlib
+        # Check for maintenance file using configurable path
         # Note: Simple file existence check doesn't block event loop
-        maintenance_file = Path("/var/run/slurm/heartbeat/maintenance")
+        maintenance_path = getattr(self.config.server, "maintenance_path", "/var/run/slurm/heartbeat/maintenance")
+        maintenance_file = Path(maintenance_path)
         try:
             return maintenance_file.exists()
         except Exception:

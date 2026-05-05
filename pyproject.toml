@@ -12,7 +12,7 @@ readme = "README.md"
 license = {text = "Apache-2.0"}
 requires-python = ">=3.10"
 authors = [
-    {name = "EFP Team", email = "efp-team@example.com"}
+    {name = "saradamian", email = "saradamian@example.com"}
 ]
 keywords = ["slurm", "heartbeat", "hpc", "federation", "efp", "monitoring"]
 classifiers = [

@@ -107,101 +107,17 @@ server:
   # If not set, readiness documents will be unsigned
   # signing_key_file: "/etc/slurm/heartbeat/signing-key.pem"
 
-# Federation state management (for peer-to-peer mode)
-# Note: Use server.allowed_sites for authorization instead
-federation:
-  # State persistence
-  state_file: "/var/lib/slurm/heartbeat/state.json"
-  state_sync_interval: 60     # Seconds between state syncs
-  
-  # Member status thresholds
-  healthy_threshold: 2        # Heartbeats to mark as healthy
-  degraded_threshold: 2       # Missed heartbeats before degraded
-  down_threshold: 3           # Missed heartbeats before down
-  
-  # Peer public keys for signature verification (optional)
-  # peer_public_keys:
-  #   "lumi": "-----BEGIN PUBLIC KEY-----\n...\n-----END PUBLIC KEY-----"
-  #   "leonardo": "-----BEGIN PUBLIC KEY-----\n...\n-----END PUBLIC KEY-----"
-
-# Metrics and monitoring
-monitoring:
-  # Prometheus metrics
-  prometheus:
-    enabled: true
-    port: 9090
-    path: "/metrics"
-    listen_address: "0.0.0.0"
-    
-  # Alerting configuration
-  alerting:
-    enabled: true
-    
-    # Webhook notifications
-    webhook:
-      enabled: false
-      url: "https://alerts.example.com/webhook"
-      timeout: 10
-      headers:
-        Authorization: "Bearer YOUR_TOKEN"
-        
-    # Email notifications
-    email:
-      enabled: false
-      smtp_server: "smtp.example.com"
-      smtp_port: 587
-      smtp_user: "heartbeat@example.com"
-      smtp_password: "YOUR_PASSWORD"
-      from_address: "heartbeat@example.com"
-      recipients:
-        - "ops-team@example.com"
-        - "sre-team@example.com"
-        
-    # Alert thresholds
-    thresholds:
-      peer_down_seconds: 120      # Alert after 2 minutes
-      peer_degraded_seconds: 60   # Alert after 1 minute
-      latency_high_seconds: 5     # Alert if latency > 5 seconds
-
-# Security configuration
-security:
-  # Certificate rotation
-  certificate:
-    auto_rotate: false
-    rotation_warning_days: 30     # Warn when cert expires in N days
-    
-  # Access control
-  access_control:
-    # IP-based restrictions (optional)
-    allowed_ips: []
-    denied_ips: []
-    
-    # Rate limiting
-    rate_limit:
-      enabled: true
-      requests_per_minute: 60
-      burst_size: 10
-
-# Performance tuning
-performance:
-  # Connection pooling
-  connection_pool:
-    max_size: 20
-    idle_timeout: 300
-    
-  # Message handling
-  message:
-    max_size_bytes: 65536         # Maximum message size
-    compression: true              # Enable gzip compression
-    
-  # Resource limits
-  resources:
-    max_threads: 10
-    max_memory_mb: 512
-
-# Debugging (disable in production)
-debug:
-  enabled: false
-  verbose_logging: false
-  trace_messages: false
-  dump_state_on_error: false
+# Note: The following sections are NOT yet implemented and will be ignored:
+# - federation (state persistence, thresholds)
+# - monitoring.alerting (webhook, email notifications)
+# - security.certificate (auto-rotation)
+# - security.access_control (IP restrictions, rate limiting)
+# - performance (connection pooling, resource limits)
+# - debug (verbose logging options)
+#
+# Only the following sections are currently implemented:
+# - general (logging, process management)
+# - cluster (site identification)
+# - client (Slurm integration, federation peers, TLS)
+# - server (authorization, TLS, feature flags)
+# - monitoring.prometheus (metrics export)

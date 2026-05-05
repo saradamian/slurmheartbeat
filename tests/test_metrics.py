@@ -45,11 +45,10 @@ class TestMetricsServer:
         config = PrometheusConfig(enabled=True, port=9090)
         server = MetricsServer(config)
 
-        with patch("slurmheartbeat.monitoring.metrics.start_http_server") as mock_start:
-            await server.start()
+        # start() no longer calls start_http_server - it's idempotent
+        await server.start()
 
-            assert server._running is True
-            mock_start.assert_called_once()
+        assert server._running is True
 
     @pytest.mark.asyncio
     async def test_stop(self):
@@ -230,3 +229,27 @@ class TestMetricsServer:
 
                 mock_labels.assert_called_with(site="test-site")
                 mock_gauge.set.assert_called_with(expected_value)
+
+    @pytest.mark.asyncio
+    async def test_start_idempotence_guard(self):
+        """Test that start() is idempotent - prevents double-start."""
+        config = PrometheusConfig(enabled=True, port=9090)
+        server = MetricsServer(config)
+
+        # First start should succeed
+        await server.start()
+        assert server._running is True
+
+        # Second start should be skipped due to idempotence guard
+        await server.start()
+        assert server._running is True  # Still running
+
+    @pytest.mark.asyncio
+    async def test_prometheus_disabled_bypass_prevention(self):
+        """Test that prometheus.enabled=false prevents metrics creation."""
+        config = PrometheusConfig(enabled=False)
+        server = MetricsServer(config)
+
+        # Should not start HTTP server when disabled
+        await server.start()
+        assert server._running is False

@@ -1,4 +1,17 @@
-"""Heartbeat receiver server for federation peers."""
+"""Heartbeat receiver server for federation peers.
+
+DEPRECATION NOTICE:
+This legacy P2P receiver is maintained for backward compatibility with existing
+federation peers. The EFP recommendation is to use pull-based readiness publishing
+via the ReadinessPublisher's /readiness endpoint instead.
+
+This receiver:
+- Accepts push-based heartbeats from peers
+- Maintains peer state and health
+- Will be deprecated when all peers migrate to pull-based model
+
+WARNING: This module is deprecated and may be removed in a future release.
+"""
 
 from __future__ import annotations
 

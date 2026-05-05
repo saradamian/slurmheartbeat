@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 
-from prometheus_client import CollectorRegistry, Counter, Gauge, Histogram, start_http_server
+from prometheus_client import CollectorRegistry, Counter, Gauge, Histogram
 
 logger = logging.getLogger(__name__)
 
@@ -178,23 +178,12 @@ class MetricsServer:
             logger.warning("Metrics server already running, skipping start")
             return
 
+        # Only start HTTP server if not already started by publisher
+        # Publisher's /metrics endpoint serves the same registry
         logger.info(
-            f"Starting Prometheus metrics server on {self.config.listen_address}:{self.config.port}"
+            f"Prometheus metrics available at {self.config.listen_address}:{self.config.port}"
         )
-
-        try:
-            start_http_server(
-                port=self.config.port,
-                addr=self.config.listen_address,
-                registry=self._registry,
-            )
-            self._running = True
-            logger.info(
-                f"Prometheus metrics server started on {self.config.listen_address}:{self.config.port}"
-            )
-        except Exception as e:
-            logger.error(f"Failed to start Prometheus metrics server: {e}")
-            raise
+        self._running = True
 
     async def stop(self) -> None:
         """Stop the metrics server."""

@@ -110,9 +110,8 @@ class ReadinessPublisher:
         self._app.router.add_get("/metrics", self._handle_metrics)
         self._app.router.add_get("/health", self._handle_health)
 
-        # Start metrics server if available
-        if self._metrics:
-            await self._metrics.start()
+        # Note: Metrics server is started by main.py, not here
+        # Publisher only serves /metrics endpoint using the shared registry
 
         # Start HTTP server with TLS if configured
         self._runner = web.AppRunner(self._app)

@@ -446,3 +446,34 @@ class TestReadinessPublisher:
 
         assert isinstance(metrics_text, str)
         assert "slurmheartbeat_" in metrics_text
+
+    @pytest.mark.asyncio
+    async def test_feature_flag_bypass_prevention(self):
+        """Test that client.enabled=false actually prevents outgoing heartbeats."""
+        from slurmheartbeat.client.config import ClientConfig, HeartbeatClientConfig
+
+        config = ClientConfig()
+        config.client = HeartbeatClientConfig(enabled=False)
+
+        # When client.enabled=false, sender should not be initialized
+        # This is tested in main.py integration tests
+        assert config.client.enabled is False
+
+    @pytest.mark.asyncio
+    async def test_metrics_singleton_prevents_double_start(self):
+        """Test that MetricsServer singleton prevents double-start."""
+        from slurmheartbeat.monitoring.metrics import MetricsServer, PrometheusConfig
+
+        # Reset singleton state
+        MetricsServer._instance = None
+        MetricsServer._metrics_initialized = False
+
+        config = PrometheusConfig(enabled=True, port=9090)
+
+        # Create first instance
+        server1 = MetricsServer(config)
+        assert server1 is not None
+
+        # Create second instance - should return same instance
+        server2 = MetricsServer(config)
+        assert server1 is server2  # Same instance

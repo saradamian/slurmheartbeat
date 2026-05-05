@@ -1,7 +1,7 @@
 # Slurm Heartbeat - Implementation Summary
 
 **Date**: 2026-05-04  
-**Status**: ✅ PRODUCTION READY  
+**Status**: ⚠️ ALPHA READINESS ADAPTER  
 **Tests**: 106/106 passing  
 **Linting**: Ruff clean  
 
@@ -9,7 +9,7 @@
 
 ## Executive Summary
 
-The Slurm Heartbeat implementation is **production-ready for EFP deployment**. All critical security issues have been resolved, the architecture follows modern Python/HPC best practices, and the codebase is well-wired with no dead code that needs removal.
+The Slurm Heartbeat implementation is **ALPHA READINESS ADAPTER** - core functionality working, production hardening in progress. All critical security issues have been resolved, the architecture follows modern Python/HPC best practices, and the codebase is well-wired. Some medium-priority issues remain before full production deployment.
 
 ### What Was Fixed (Latest Session)
 
