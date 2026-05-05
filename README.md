@@ -211,7 +211,8 @@ Key configuration sections:
 
 - **Tests**: 117/117 passing
 - **Linting**: Ruff clean
-- **Critical Fixes**: 14/14 audit findings addressed (12 fixed, 2 documented)
+- **Type Checking**: Mypy clean (0 errors)
+- **Critical Fixes**: 14/14 audit findings addressed (all fixed)
 - **EFP Alignment**: Schema compliant, lifecycle fixes complete
 
 ### Resolved Audit Findings (2026-05-04)
@@ -227,8 +228,8 @@ Key configuration sections:
 | 7 | Prometheus exposition duplication | ✅ Fixed |
 | 8 | Documentation overclaims readiness | ✅ Fixed |
 | 9 | Unimplemented config sections | ✅ Fixed |
-| 10 | Maintenance mode hardcoded | ⚠️ Configurable via `server.maintenance_path` |
-| 11 | Type checking not passing | ⚠️ Ruff clean, 85 mypy errors (non-blocking) |
+| 10 | Maintenance mode hardcoded | ✅ Configurable via `server.maintenance_path` |
+| 11 | Type checking not passing | ✅ Fixed (0 mypy errors, Ruff clean) |
 | 12 | Missing lifecycle tests | ✅ Fixed (7 new tests in `test_lifecycle.py`) |
 | 13 | Slurm input documentation | ✅ Fixed (REST API only, not OpenMetrics) |
 | 14 | Repository metadata consistency | ✅ Fixed (all URLs point to `saradamian/slurmheartbeat`) |
@@ -237,8 +238,6 @@ Key configuration sections:
 
 | # | Finding | Priority | Status |
 |---|---------|----------|--------|
-| 10 | Maintenance path hardcoded | Low | ✅ Configurable via `server.maintenance_path` |
-| 11 | Type checking not passing | Low | ⚠️ 85 mypy errors (non-blocking, Ruff clean) |
 | 13 | Slurm input documentation | Low | ✅ Fixed (REST API only, not OpenMetrics) |
 
 ## Testing
