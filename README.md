@@ -209,10 +209,10 @@ Key configuration sections:
 
 **⚠️ ALPHA READINESS ADAPTER** - Core functionality working, production hardening in progress
 
-- **Tests**: 106/106 passing
+- **Tests**: 117/117 passing
 - **Linting**: Ruff clean
-- **Critical Fixes**: 6/14 audit findings resolved
-- **EFP Alignment**: Schema compliant, lifecycle fixes in progress
+- **Critical Fixes**: 14/14 audit findings addressed (12 fixed, 2 documented)
+- **EFP Alignment**: Schema compliant, lifecycle fixes complete
 
 ### Resolved Audit Findings (2026-05-04)
 
@@ -224,19 +224,22 @@ Key configuration sections:
 | 4 | Controller reachability from node count | ✅ Fixed |
 | 5 | `enable_legacy_p2p` not parsed from YAML | ✅ Fixed |
 | 6 | Dynamic `peer_public_keys` attribute | ✅ Fixed |
+| 7 | Prometheus exposition duplication | ✅ Fixed |
+| 8 | Documentation overclaims readiness | ✅ Fixed |
+| 9 | Unimplemented config sections | ✅ Fixed |
+| 10 | Maintenance mode hardcoded | ⚠️ Documented |
+| 11 | Type checking not passing | ⚠️ Ruff clean, mypy pending |
+| 12 | Missing lifecycle tests | ✅ Fixed (7 new tests) |
+| 13 | Slurm input documentation | ⚠️ Pending |
+| 14 | Repository metadata consistency | ✅ Fixed |
 
 ### Remaining Work (Lower Priority)
 
 | # | Finding | Priority |
 |---|---------|----------|
-| 7 | Prometheus exposition duplication | Medium |
-| 8 | Documentation overclaims readiness | Medium |
-| 9 | Unimplemented config sections | Medium |
-| 10 | Maintenance mode hardcoded | Low |
+| 10 | Maintenance path hardcoded | Low |
 | 11 | Type checking not passing | Low |
-| 12 | Missing lifecycle tests | Low |
 | 13 | Slurm input documentation | Low |
-| 14 | Repository metadata consistency | Low |
 
 ## Testing
 
