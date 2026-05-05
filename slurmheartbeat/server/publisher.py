@@ -16,10 +16,9 @@ from typing import TYPE_CHECKING
 
 from aiohttp import web
 
-from slurmheartbeat.monitoring.metrics import MetricsServer
-
 if TYPE_CHECKING:
     from slurmheartbeat.client.config import PrometheusConfig, ServerConfig
+    from slurmheartbeat.monitoring.metrics import MetricsServer
     from slurmheartbeat.protocol.schema import ReadinessMessage
 
 logger = logging.getLogger(__name__)
@@ -84,13 +83,9 @@ class ReadinessPublisher:
             fed_state=fed_state,
         )
 
-        # Use provided metrics or create default only if prometheus is enabled
-        if metrics:
-            self._metrics = metrics
-        elif prometheus_config and prometheus_config.enabled:
-            self._metrics = MetricsServer(prometheus_config)
-        else:
-            self._metrics = None
+        # Use provided metrics instance (from main.py)
+        # Do NOT create a new MetricsServer here - this causes double-start and bypasses prometheus.enabled=false
+        self._metrics = metrics
         self._app: web.Application | None = None
         self._runner: web.AppRunner | None = None
         self._site: web.TCPSite | None = None

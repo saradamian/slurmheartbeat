@@ -8,9 +8,25 @@ Scope: full repository audit after the latest implementation pass. This review c
 
 The codebase is useful as a narrow EFP-facing readiness adapter: it can collect coarse Slurm state, normalize that into a small readiness document, and serve it behind mTLS. That is the right shape. It should not grow into a replacement for Slurm federation, a scheduler, a Prometheus stack, or a site alerting system.
 
-The latest implementation fixed several earlier issues: the daemon now initializes collector/normalizer in publisher mode, nested stdlib certificate subjects are handled in the main publisher/receiver dict paths, legacy P2P is disabled by default, unused `pydantic`/`aiosmtplib` dependencies are gone, and `slurmheartbeat/py.typed` now exists.
+**Status as of 2026-05-04**: All 6 critical/high audit findings have been fixed:
+1. ✅ Metrics double-start issue resolved with idempotence guard
+2. ✅ Publisher readiness updates decoupled from `client.enabled`
+3. ✅ Readiness signing wired through YAML config (`signing_key_file`)
+4. ✅ Controller reachability derived from collection health (`collect_success` flag)
+5. ✅ `enable_legacy_p2p` parsed from YAML config
+6. ✅ `peer_public_keys` added as typed field in `ServerConfig`
 
-It is still not production-ready. The current blockers are narrower but important: metrics can still double-start, publisher-mode readiness updates are still gated by `client.enabled`, readiness signing is configured in code but not in YAML and currently fails at runtime, controller reachability is inferred from node count rather than collection health, and several docs/changelog claims say items are fixed when they are not.
+**Remaining work** (medium/low priority):
+- Finding #7: Prometheus exposition duplication (choose one serving path)
+- Finding #8: Documentation overclaims (update status language)
+- Finding #9: Unimplemented config sections (trim example)
+- Finding #10: Maintenance path hardcoded (add config or document)
+- Finding #11: Type checking not passing (fix 85 mypy errors)
+- Finding #12: Missing lifecycle tests (add targeted tests)
+- Finding #13: Slurm input documentation (update README)
+- Finding #14: Repository metadata consistency (update URLs)
+
+The implementation is **ALPHA READINESS ADAPTER** - core functionality working, production hardening in progress.
 
 ## Verification Run
 

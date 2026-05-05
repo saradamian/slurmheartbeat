@@ -338,5 +338,5 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENS
 
 ## Contact
 
-- Project Issues: [GitHub Issues](https://github.com/samehuman/slurmheartbeat/issues)
+- Project Issues: [GitHub Issues](https://github.com/saradamian/slurmheartbeat/issues)
 - Email: [contact@samehuman.org](mailto:contact@samehuman.org)
