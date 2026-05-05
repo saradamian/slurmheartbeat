@@ -201,9 +201,30 @@ Key configuration sections:
 
 ## Documentation
 
-- [`EFP_HEARTBEAT_RECOMMENDATION.md`](EFP_HEARTBEAT_RECOMMENDATION.md) - EFP requirements and recommendations
+### Core Documentation
+
 - [`CHANGELOG.md`](CHANGELOG.md) - Version history and changes
-- [`docs/`](docs/) - Operations, security, deployment, and testing guides
+- [`LICENSE`](LICENSE) - Apache License 2.0
+- [`CONTRIBUTING.md`](CONTRIBUTING.md) - Contributing guide
+
+### EFP and Architecture
+
+- [`docs/EFP_HEARTBEAT_RECOMMENDATION.md`](docs/EFP_HEARTBEAT_RECOMMENDATION.md) - EFP requirements, scope, and recommendations
+- [`docs/ADR.md`](docs/ADR.md) - Architecture Decision Records (ADR-001 through ADR-008)
+
+### Installation and Operations
+
+- [`docs/INSTALLATION.md`](docs/INSTALLATION.md) - Complete installation and deployment guide
+- [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) - Production deployment considerations
+- [`docs/OPERATIONS.md`](docs/OPERATIONS.md) - Operations, monitoring, and maintenance
+- [`docs/SECURITY.md`](docs/SECURITY.md) - Security model, mTLS, and signing
+- [`docs/TESTING.md`](docs/TESTING.md) - Testing procedures and lifecycle tests
+
+### Reference
+
+- [`config.example.yaml`](config.example.yaml) - Configuration reference
+- [`docs/GLOSSARY.md`](docs/GLOSSARY.md) - Terminology and definitions
+- [`docs/CONSOLIDATION_SUMMARY.md`](docs/CONSOLIDATION_SUMMARY.md) - Documentation consolidation history
 
 ## Implementation Status
 
