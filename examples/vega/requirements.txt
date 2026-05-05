@@ -1,0 +1,13 @@
+# Slurm Heartbeat - Python Dependencies
+# Generated for vega deployment example
+
+# Core dependencies
+PyYAML>=6.0
+requests>=2.31.0
+cryptography>=41.0.0
+prometheus_client>=0.17.0
+
+# Development dependencies (optional)
+pytest>=7.4.0
+ruff>=0.1.0
+mypy>=1.7.0
