@@ -224,7 +224,7 @@ class HeartbeatSender:
                         error=str(result),
                     )
                 )
-            else:
+            elif isinstance(result, SendResult):
                 processed_results.append(result)
 
         # Log summary

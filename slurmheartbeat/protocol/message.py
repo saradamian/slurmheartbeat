@@ -151,6 +151,34 @@ class HeartbeatMessage:
         return json.dumps(self.to_dict())
 
     @classmethod
+    def from_metrics(
+        cls, metrics: Any, cluster_info: ClusterInfo | None = None
+    ) -> HeartbeatMessage:
+        """Create heartbeat message from collector metrics.
+
+        Args:
+            metrics: ClusterMetrics from SlurmCollector.
+            cluster_info: Optional ClusterInfo to override defaults.
+
+        Returns:
+            HeartbeatMessage with current metrics.
+        """
+        return cls(
+            schema_version="0.1",
+            timestamp=datetime.utcnow().isoformat() + "Z",
+            cluster=cluster_info
+            if cluster_info
+            else ClusterInfo(id="unknown", name="unknown", site="unknown"),
+            node_stats=metrics.node_stats,
+            partition_stats=metrics.partition_stats,
+            job_stats=metrics.job_stats,
+            resource_usage=metrics.resource_usage,
+            federation=FederationInfo(),
+            signature=None,
+            status="healthy",
+        )
+
+    @classmethod
     def from_dict(cls, data: dict[str, Any]) -> HeartbeatMessage:
         """Create from dictionary."""
         return cls(
@@ -223,7 +251,7 @@ class HeartbeatMessage:
             private_key_obj = private_key
 
         # RSA-only at runtime - suppress mypy errors for non-RSA key types
-        signature = private_key_obj.sign(message_json.encode(), padding.PKCS1v15(), hashes.SHA256())  # type: ignore[union-attr]
+        signature = private_key_obj.sign(message_json.encode(), padding.PKCS1v15(), hashes.SHA256())  # type: ignore[union-attr, call-arg, arg-type]
         self.signature = signature.hex()
 
     def verify_signature(self, public_key_pem: bytes) -> bool:

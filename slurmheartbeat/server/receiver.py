@@ -19,9 +19,11 @@ import asyncio
 import logging
 from dataclasses import dataclass
 from datetime import datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
+    from aiohttp import web
+
     from slurmheartbeat.client.config import ServerConfig
     from slurmheartbeat.protocol.message import HeartbeatMessage
 
@@ -189,16 +191,16 @@ class HeartbeatReceiver:
             ]
         }
 
-    async def _handle_heartbeat(self, request) -> dict:
+    async def _handle_heartbeat(self, request: web.Request) -> dict[str, Any]:
         """Handle incoming heartbeat request."""
         # Placeholder for HTTP handler
         return {"status": "ok"}
 
-    async def _handle_health(self, request) -> dict:
+    async def _handle_health(self, request: web.Request) -> dict[str, Any]:
         """Handle health check request."""
         return {"status": "healthy"}
 
-    async def _handle_peers(self, request) -> dict:
+    async def _handle_peers(self, request: web.Request) -> dict[str, Any]:
         """Handle peers list request."""
         peers = await self.state.get_all_peers()
         return {"peers": [p.name for p in peers]}

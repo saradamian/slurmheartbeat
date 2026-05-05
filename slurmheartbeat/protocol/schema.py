@@ -261,7 +261,7 @@ class ReadinessMessage:
             private_key_obj = private_key
 
         # RSA-only at runtime - suppress mypy errors for non-RSA key types
-        signature = private_key_obj.sign(message_json.encode(), padding.PKCS1v15(), hashes.SHA256())  # type: ignore[union-attr]
+        signature = private_key_obj.sign(message_json.encode(), padding.PKCS1v15(), hashes.SHA256())  # type: ignore[union-attr, call-arg, arg-type]
         self.signature = signature.hex()
 
     def verify_signature(self, public_key_pem: bytes) -> bool:
