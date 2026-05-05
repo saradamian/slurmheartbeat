@@ -6,6 +6,7 @@ import logging
 import ssl
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
@@ -200,7 +201,7 @@ def generate_ca_certificate(
     return cert, private_key
 
 
-def load_private_key(key_file: str, password: str | None = None) -> rsa.RSAPrivateKey:
+def load_private_key(key_file: str, password: str | None = None) -> Any:
     """Load a private key from a file.
 
     Args:
@@ -208,7 +209,7 @@ def load_private_key(key_file: str, password: str | None = None) -> rsa.RSAPriva
         password: Optional password for encrypted key.
 
     Returns:
-        Loaded private key.
+        Loaded private key (Any type to support different key types).
     """
     from pathlib import Path
 
@@ -346,7 +347,7 @@ def save_private_key(key: rsa.RSAPrivateKey, path: str, password: bytes | None =
     path_obj.parent.mkdir(parents=True, exist_ok=True)
 
     if password:
-        encryption = serialization.BestAvailableEncryption(password)
+        encryption: Any = serialization.BestAvailableEncryption(password)
     else:
         encryption = serialization.NoEncryption()
 

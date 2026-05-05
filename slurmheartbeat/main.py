@@ -72,7 +72,16 @@ class HeartbeatDaemon:
         # Initialize metrics server FIRST, before any components that depend on it
         # This ensures configured metrics are used instead of default singleton
         if self.config.monitoring.prometheus.enabled:
-            self.metrics = MetricsServer(self.config.monitoring.prometheus)
+            from slurmheartbeat.monitoring.metrics import (
+                PrometheusConfig as MetricsPrometheusConfig,
+            )
+
+            self.metrics = MetricsServer(MetricsPrometheusConfig(
+                enabled=self.config.monitoring.prometheus.enabled,
+                port=self.config.monitoring.prometheus.port,
+                path=self.config.monitoring.prometheus.path,
+                listen_address=self.config.monitoring.prometheus.listen_address,
+            ))
             # Note: Metrics HTTP server is NOT started here - publisher serves /metrics endpoint
             logger.info(f"Prometheus metrics available at port {self.config.monitoring.prometheus.port}")
 
@@ -248,7 +257,7 @@ class HeartbeatDaemon:
                                     self.metrics.record_heartbeat_error(
                                         result.peer_name,
                                         "timeout"
-                                        if "timeout" in result.error.lower()
+                                        if result.error and "timeout" in result.error.lower()
                                         else "connection",
                                     )
 
@@ -273,9 +282,9 @@ class HeartbeatDaemon:
                                 last_seen_dt = datetime.fromisoformat(
                                     last_seen.replace("Z", "+00:00")
                                 )
-                                last_seen_seconds = (
-                                    datetime.utcnow() - last_seen_dt.replace(tzinfo=None)
-                                ).total_seconds()
+                                last_seen_seconds = int(
+                                    (datetime.utcnow() - last_seen_dt.replace(tzinfo=None)).total_seconds()
+                                )
                             except Exception:
                                 last_seen_seconds = 0
 
@@ -288,22 +297,6 @@ class HeartbeatDaemon:
             except Exception as e:
                 logger.error(f"Error in heartbeat loop: {e}")
                 await asyncio.sleep(self.config.client.interval_seconds)
-
-    async def _check_slurmctld_reachable(self) -> bool:
-        """Check if slurmctld is reachable.
-
-        Returns:
-            True if slurmctld is reachable, False otherwise.
-        """
-        if not self.collector:
-            return False
-
-        try:
-            # Try to collect metrics - if successful, slurmctld is reachable
-            await self.collector.collect()
-            return True
-        except Exception:
-            return False
 
     async def _check_maintenance_state(self) -> bool:
         """Check if the system is in maintenance mode.
@@ -362,7 +355,7 @@ async def main() -> int:
     loop = asyncio.get_event_loop()
     shutdown_event = asyncio.Event()
 
-    def signal_handler():
+    def signal_handler() -> None:
         logger.info("Received shutdown signal")
         shutdown_event.set()
 

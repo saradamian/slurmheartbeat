@@ -90,10 +90,10 @@ class ReadinessNormalizer:
 
         # Create readiness message
         message = ReadinessMessage(
-            schema_version="0.1",
             site_id=self.site_id,
             cluster_name=self.cluster_name,
             observed_at=datetime.utcnow().isoformat() + "Z",
+            schema_version="0.1",
             status=status,
             fed_state=self.fed_state,
             reason=reason,
@@ -116,8 +116,8 @@ class ReadinessNormalizer:
         - ready: site is reachable and intentionally accepting relevant federated work
         - limited: reachable, but degraded capacity, maintenance, high queue pressure, or partial partition availability
         - draining: site is intentionally stopping intake
-        - unavailable: site cannot be reached, Slurm is unhealthy, or local policy says not to route work
-        - unknown: data is stale or contradictory
+        - unavailable: site cannot be reached, Slurm is unhealthy, or local policy prevents serving
+        - unknown: insufficient information to determine status
 
         Args:
             metrics: Collected Slurm metrics
@@ -127,65 +127,46 @@ class ReadinessNormalizer:
         Returns:
             Tuple of (status, reason)
         """
+        # Check if controller is reachable
         if not slurmctld_reachable:
-            return (
-                ReadinessStatus.UNAVAILABLE,
-                "Slurm controller (slurmctld) is not reachable",
-            )
+            return ReadinessStatus.UNAVAILABLE, "slurmctld unreachable"
 
+        # Check maintenance mode
         if maintenance:
-            return (
-                ReadinessStatus.DRAINING,
-                "Site is in maintenance mode and not accepting new work",
-            )
+            return ReadinessStatus.LIMITED, "maintenance mode"
 
-        node_stats = metrics.node_stats
-        if node_stats.total == 0:
-            return (
-                ReadinessStatus.UNKNOWN,
-                "No nodes detected in Slurm",
-            )
+        # Check node health
+        total_nodes = metrics.node_stats.total
+        if total_nodes == 0:
+            return ReadinessStatus.UNKNOWN, "no nodes detected"
 
-        # Calculate health percentages
-        down_ratio = node_stats.down / node_stats.total if node_stats.total > 0 else 0
-        drained_ratio = node_stats.drained / node_stats.total if node_stats.total > 0 else 0
+        unhealthy_ratio = (metrics.node_stats.down + metrics.node_stats.drained) / total_nodes
+        if unhealthy_ratio > 0.5:
+            return ReadinessStatus.UNAVAILABLE, "majority of nodes unhealthy"
+        elif unhealthy_ratio > 0.2:
+            return ReadinessStatus.LIMITED, "significant node degradation"
 
-        if down_ratio > 0.5:
-            return (
-                ReadinessStatus.UNAVAILABLE,
-                f"More than 50% of nodes are down ({down_ratio:.0%})",
-            )
+        # Check partition availability (only if partitions are provided)
+        if metrics.partition_stats:
+            partition_available = any(p.total_nodes > 0 for p in metrics.partition_stats)
+            if not partition_available:
+                return ReadinessStatus.UNAVAILABLE, "no partitions available"
+            # Check if any partition has idle nodes
+            critical_partitions_available = any(p.idle_nodes > 0 for p in metrics.partition_stats)
+            if not critical_partitions_available and metrics.node_stats.idle == 0:
+                return ReadinessStatus.LIMITED, "no idle nodes in partitions"
 
-        if drained_ratio > 0.5:
-            return (
-                ReadinessStatus.LIMITED,
-                f"More than 50% of nodes are drained ({drained_ratio:.0%})",
-            )
+        # Check queue pressure
+        queue_pressure = self._determine_queue_pressure(metrics)
+        if queue_pressure == QueuePressure.CRITICAL:
+            return ReadinessStatus.LIMITED, "critical queue pressure"
 
-        # Check for critical queue pressure
-        job_stats = metrics.job_stats
-        total_jobs = job_stats.pending + job_stats.running
-        if total_jobs > 0:
-            pending_ratio = job_stats.pending / total_jobs
-            if pending_ratio > 0.8:
-                return (
-                    ReadinessStatus.LIMITED,
-                    f"High queue pressure: {pending_ratio:.0%} of jobs are pending",
-                )
+        # Check federation state
+        if self.fed_state == "INACTIVE":
+            return ReadinessStatus.DRAINING, "federation inactive"
 
-        # Check for critical partitions
-        critical_partitions = self._check_critical_partitions(metrics)
-        if not critical_partitions:
-            return (
-                ReadinessStatus.LIMITED,
-                "Critical partitions are unavailable",
-            )
-
-        # All checks passed - site is ready
-        return (
-            ReadinessStatus.READY,
-            "Site is ready to accept federated work",
-        )
+        # All checks passed
+        return ReadinessStatus.READY, "site ready"
 
     def _build_signals(
         self,
@@ -193,7 +174,7 @@ class ReadinessNormalizer:
         slurmctld_reachable: bool,
         maintenance: bool,
     ) -> Signals:
-        """Build readiness signals from metrics.
+        """Build signals from metrics.
 
         Args:
             metrics: Collected Slurm metrics
@@ -201,20 +182,20 @@ class ReadinessNormalizer:
             maintenance: Whether the site is in maintenance mode
 
         Returns:
-            Signals object with detailed readiness indicators
+            Signals object with current state
         """
         # Determine queue pressure level
         queue_pressure = self._determine_queue_pressure(metrics)
 
-        # Check if critical partitions are available
+        # Check critical partitions
         critical_partitions_available = self._check_critical_partitions(metrics)
 
         # Determine if accepting new jobs
-        accepting_new_jobs = slurmctld_reachable and not maintenance
+        accepting_new_jobs = not maintenance and slurmctld_reachable
 
         return Signals(
             slurmctld_reachable=slurmctld_reachable,
-            slurm_federation_visible=self.fed_state in ("ACTIVE", "UP"),
+            slurm_federation_visible=self.fed_state == "ACTIVE",
             maintenance=maintenance,
             accepting_new_jobs=accepting_new_jobs,
             queue_pressure=queue_pressure,
@@ -248,13 +229,13 @@ class ReadinessNormalizer:
             metrics: Collected Slurm metrics
 
         Returns:
-            QueuePressure level
+            QueuePressure enum value
         """
         job_stats = metrics.job_stats
         node_stats = metrics.node_stats
 
         if node_stats.total == 0:
-            return QueuePressure.NORMAL
+            return QueuePressure.LOW
 
         # Calculate pending ratio
         total_jobs = job_stats.pending + job_stats.running
@@ -283,13 +264,25 @@ class ReadinessNormalizer:
             metrics: Collected Slurm metrics
 
         Returns:
-            True if critical partitions appear available
+            True if at least one partition has available nodes
         """
-        if not metrics.partition_stats:
-            return True  # No partitions = assume OK
+        for partition in metrics.partition_stats:
+            if partition.total_nodes > 0 and partition.idle_nodes > 0:
+                return True
+        return False
 
-        # Check if any partition has idle nodes
-        return any(partition.idle_nodes > 0 for partition in metrics.partition_stats)
+    def _calculate_node_health(self, metrics: ClusterMetrics) -> float:
+        """Calculate node health as a ratio.
 
+        Args:
+            metrics: Collected Slurm metrics
 
-__all__ = ["ReadinessNormalizer"]
+        Returns:
+            Node health ratio (0.0 to 1.0)
+        """
+        total_nodes = metrics.node_stats.total
+        if total_nodes == 0:
+            return 0.0
+
+        unhealthy_nodes = metrics.node_stats.down + metrics.node_stats.drained
+        return max(0.0, 1.0 - (unhealthy_nodes / total_nodes))

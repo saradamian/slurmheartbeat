@@ -263,7 +263,7 @@ class ReadinessPublisher:
             content_type="application/json",
         )
 
-    def _extract_peer_name(self, request: web.Request) -> str | None:
+    def _extract_peer_name(self, request: web.Request) -> str:
         """Extract peer name from client certificate.
 
         Per EFP security: Use mTLS client certificate for authentication.
@@ -272,13 +272,13 @@ class ReadinessPublisher:
             request: aiohttp request
 
         Returns:
-            Peer name (CN from certificate) or None
+            Peer name (CN from certificate) or empty string if not found
         """
         # Try to get peer certificate from transport
         try:
             transport = request.transport
             if not transport:
-                return None
+                return ""
 
             # Try different keys for peer certificate
             cert = transport.get_extra_info("peercert")
@@ -286,7 +286,7 @@ class ReadinessPublisher:
                 cert = transport.get_extra_info("peer_certificate")
 
             if not cert:
-                return None
+                return ""
 
             # Parse certificate to extract CN
             if isinstance(cert, dict):
@@ -294,7 +294,8 @@ class ReadinessPublisher:
                 # Subject can be nested: ((("commonName", "value"),), (("organizationName", "value"),),)
                 # or flattened: (("commonName", "value"), ("organizationName", "value"))
                 subject = cert.get("subject", [])
-                return self._extract_cn_from_subject(subject)
+                cn = self._extract_cn_from_subject(subject)
+                return cn if cn else ""
             elif isinstance(cert, bytes):
                 # DER format (binary)
                 from cryptography import x509
@@ -305,12 +306,12 @@ class ReadinessPublisher:
             if hasattr(cert, "subject"):
                 for attr in cert.subject:
                     if attr.oid == x509.oid.NameOID.COMMON_NAME:
-                        return attr.value
+                        return str(attr.value)
 
-            return None
+            return ""
         except Exception as e:
             logger.error(f"Error extracting peer name: {e}")
-            return None
+            return ""
 
     def _extract_cn_from_subject(self, subject: list) -> str | None:
         """Extract commonName from certificate subject, handling nested RDN format.
@@ -335,11 +336,11 @@ class ReadinessPublisher:
                         if isinstance(attr, tuple) and len(attr) >= 2:
                             key, value = attr[0], attr[1]
                             if key == "commonName":
-                                return value
+                                return str(value)  # type: ignore
                 else:
                     # Flattened format: rdn itself is ("commonName", "value")
                     if len(rdn) >= 2 and rdn[0] == "commonName":
-                        return rdn[1]
+                        return str(rdn[1])  # type: ignore
         return None
 
     def _is_authorized(self, peer_name: str) -> bool:

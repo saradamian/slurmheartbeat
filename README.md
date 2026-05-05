@@ -227,19 +227,19 @@ Key configuration sections:
 | 7 | Prometheus exposition duplication | ✅ Fixed |
 | 8 | Documentation overclaims readiness | ✅ Fixed |
 | 9 | Unimplemented config sections | ✅ Fixed |
-| 10 | Maintenance mode hardcoded | ⚠️ Documented |
-| 11 | Type checking not passing | ⚠️ Ruff clean, mypy pending |
-| 12 | Missing lifecycle tests | ✅ Fixed (7 new tests) |
-| 13 | Slurm input documentation | ⚠️ Pending |
-| 14 | Repository metadata consistency | ✅ Fixed |
+| 10 | Maintenance mode hardcoded | ⚠️ Configurable via `server.maintenance_path` |
+| 11 | Type checking not passing | ⚠️ Ruff clean, 85 mypy errors (non-blocking) |
+| 12 | Missing lifecycle tests | ✅ Fixed (7 new tests in `test_lifecycle.py`) |
+| 13 | Slurm input documentation | ✅ Fixed (REST API only, not OpenMetrics) |
+| 14 | Repository metadata consistency | ✅ Fixed (all URLs point to `saradamian/slurmheartbeat`) |
 
-### Remaining Work (Lower Priority)
+### Remaining Work (Lower Priority, Non-Blocking)
 
-| # | Finding | Priority |
-|---|---------|----------|
-| 10 | Maintenance path hardcoded | Low |
-| 11 | Type checking not passing | Low |
-| 13 | Slurm input documentation | Low |
+| # | Finding | Priority | Status |
+|---|---------|----------|--------|
+| 10 | Maintenance path hardcoded | Low | ✅ Configurable via `server.maintenance_path` |
+| 11 | Type checking not passing | Low | ⚠️ 85 mypy errors (non-blocking, Ruff clean) |
+| 13 | Slurm input documentation | Low | ✅ Fixed (REST API only, not OpenMetrics) |
 
 ## Testing
 
@@ -271,9 +271,10 @@ Per EFP recommendation:
 ## Known Limitations
 
 1. **Legacy P2P**: `HeartbeatMessage` (legacy) and `ReadinessMessage` (EFP) both supported. Legacy protocol is deprecated but kept for backward compatibility.
-2. **Signature Verification**: `verify_signature()` still expects PEM bytes (not key objects).
+2. **Signature Verification**: `verify_signature()` expects PEM bytes (not key objects).
 3. **End-to-End Tests**: No integration tests with real TLS certificates (all tests use mocks).
 4. **Readiness Signing**: Optional - requires `signing_key_file` configuration in publisher.
+5. **Slurm Input**: Only REST API (`slurmrestd`) supported. OpenMetrics not yet implemented.
 
 ## What This Does NOT Do
 
@@ -342,4 +343,4 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENS
 ## Contact
 
 - Project Issues: [GitHub Issues](https://github.com/saradamian/slurmheartbeat/issues)
-- Email: [contact@samehuman.org](mailto:contact@samehuman.org)
+- Email: [contact@saradamian.org](mailto:contact@saradamian.org)

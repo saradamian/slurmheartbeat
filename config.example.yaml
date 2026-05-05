@@ -101,7 +101,7 @@ server:
   # Signature verification - public keys for federation peers
   # Format: peer_name -> PEM-encoded public key
   # Leave empty if not using signature verification
-  peer_public_keys: {}
+  peer_public_keys: {}  # Empty dict, not None
   
   # Message signing - private key for signing outgoing readiness documents
   # If not set, readiness documents will be unsigned

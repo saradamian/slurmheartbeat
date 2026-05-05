@@ -20,32 +20,31 @@ class TestHeartbeatMessage:
         """Test creating a heartbeat message."""
         message = HeartbeatMessage(
             cluster=ClusterInfo(id="test", name="test-cluster", site="test-site"),
-            status="healthy",
         )
 
-        assert message.version == "1.0"
+        assert message.schema_version == "0.1"
         assert message.cluster.id == "test"
-        assert message.status == "healthy"
+        assert message.get_status() == "healthy"
 
     def test_message_to_dict(self):
         """Test message serialization to dictionary."""
         message = HeartbeatMessage(
             cluster=ClusterInfo(id="test", name="test-cluster", site="test-site", uptime=1000),
-            status="healthy",
             node_stats=NodeStats(total=10, idle=5, allocated=4, drained=1, down=0),
         )
 
         data = message.to_dict()
 
-        assert data["version"] == "1.0"
+        assert data["schema_version"] == "0.1"
         assert data["cluster"]["id"] == "test"
-        assert data["status"] == "healthy"
         assert data["node_stats"]["total"] == 10
+        # Note: to_dict() doesn't include "status" - it's computed by get_status()
+        assert "status" not in data  # status is not stored, it's computed
 
     def test_message_from_dict(self):
         """Test message deserialization from dictionary."""
         data = {
-            "version": "1.0",
+            "schema_version": "0.1",
             "timestamp": "2025-01-09T12:00:00Z",
             "cluster": {
                 "id": "test",
@@ -54,7 +53,6 @@ class TestHeartbeatMessage:
                 "version": "24.05.0",
                 "uptime": 1000,
             },
-            "status": "healthy",
             "node_stats": {
                 "total": 10,
                 "idle": 5,
@@ -75,7 +73,10 @@ class TestHeartbeatMessage:
                 "memory_percent": 0.0,
                 "gpu_percent": 0.0,
             },
-            "federation": None,
+            "federation": {
+                "state": "UNKNOWN",
+                "peers": [],
+            },
             "signature": None,
         }
 
@@ -83,14 +84,13 @@ class TestHeartbeatMessage:
 
         assert message.cluster.id == "test"
         assert message.cluster.name == "test-cluster"
-        assert message.status == "healthy"
+        assert message.get_status() == "degraded"  # 1 drained out of 10 total = degraded
         assert message.node_stats.total == 10
 
     def test_message_roundtrip(self):
         """Test message serialization and deserialization roundtrip."""
         original = HeartbeatMessage(
             cluster=ClusterInfo(id="test", name="test-cluster", site="test-site"),
-            status="healthy",
             node_stats=NodeStats(total=10, idle=5, allocated=4, drained=1, down=0),
             job_stats=JobStats(pending=5, running=10, completed=100, failed=2, cancelled=3),
         )
@@ -102,7 +102,7 @@ class TestHeartbeatMessage:
         # Verify all fields
         assert restored.cluster.id == original.cluster.id
         assert restored.cluster.name == original.cluster.name
-        assert restored.status == original.status
+        assert restored.get_status() == original.get_status()
         assert restored.node_stats.total == original.node_stats.total
         assert restored.job_stats.running == original.job_stats.running
 
@@ -110,14 +110,14 @@ class TestHeartbeatMessage:
         """Test message JSON serialization."""
         message = HeartbeatMessage(
             cluster=ClusterInfo(id="test", name="test-cluster", site="test-site"),
-            status="healthy",
         )
 
         json_str = message.to_json()
 
         assert isinstance(json_str, str)
         assert "test" in json_str
-        assert "healthy" in json_str
+        # Note: "healthy" is not in the JSON because status is computed, not stored
+        assert "schema_version" in json_str
 
     def test_get_status_healthy(self):
         """Test status calculation for healthy cluster."""
@@ -232,10 +232,9 @@ class TestFederationInfo:
     def test_create_federation_info(self):
         """Test creating federation info."""
         info = FederationInfo(
-            peers_seen=["peer1", "peer2"],
-            peers_unreachable=[],
-            federation_name="efp",
+            state="ACTIVE",
+            peers=["peer1", "peer2"],
         )
 
-        assert info.peers_seen == ["peer1", "peer2"]
-        assert info.federation_name == "efp"
+        assert info.state == "ACTIVE"
+        assert info.peers == ["peer1", "peer2"]

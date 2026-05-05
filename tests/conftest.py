@@ -212,5 +212,4 @@ def sample_heartbeat_message():
 
     return HeartbeatMessage(
         cluster=ClusterInfo(id="test", name="test-cluster", site="test-site"),
-        status="healthy",
     )

@@ -213,7 +213,7 @@ class HeartbeatSender:
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
         # Process results
-        processed_results = []
+        processed_results: list[SendResult] = []
         for peer, result in zip(self.config.federation.peers, results, strict=True):
             if isinstance(result, Exception):
                 processed_results.append(
