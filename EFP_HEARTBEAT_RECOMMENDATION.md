@@ -1,7 +1,7 @@
 # EFP Slurm Heartbeat Recommendation
 
 **Date**: 2026-05-01  
-**Status**: Recommendation draft  
+**Status**: Implemented  
 **Purpose**: Document what a Slurm "heartbeat" should mean for the EuroHPC Federation Platform (EFP), before committing to a production implementation.
 
 ## Executive Recommendation

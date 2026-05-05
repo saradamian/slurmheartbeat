@@ -12,10 +12,11 @@ Unit tests verify individual components in isolation:
 - **Client Tests**: Heartbeat sender, retry logic
 - **Server Tests**: Heartbeat receiver, peer state management
 - **Metrics Tests**: Prometheus metric collection
+- **Lifecycle Tests**: Double-start prevention, feature flag bypass
 
 Run unit tests:
 ```bash
-pytest tests/test_protocol.py tests/test_client.py tests/test_server.py -v
+pytest tests/test_protocol.py tests/test_client.py tests/test_server.py tests/test_lifecycle.py -v
 ```
 
 ### Integration Tests
@@ -28,21 +29,10 @@ Integration tests verify component interactions:
 
 Run integration tests:
 ```bash
-pytest tests/test_integration.py -v --integration
+pytest tests/test_integration.py -v
 ```
 
-### Performance Tests
-
-Performance tests measure overhead and scalability:
-
-- **Latency**: Time to send/receive heartbeat
-- **Throughput**: Maximum heartbeats per second
-- **Memory**: Memory usage under load
-
-Run performance tests:
-```bash
-pytest tests/test_performance.py -v --performance
-```
+**Note**: Integration tests with real TLS certificates are not yet implemented. All tests use mocks for certificate validation.
 
 ## Test Setup
 
@@ -70,13 +60,13 @@ pip install pytest pytest-asyncio pytest-cov pytest-mock
 ### All Tests
 
 ```bash
-./scripts/run_tests.sh
+pytest tests/ -v
 ```
 
 ### With Coverage
 
 ```bash
-./scripts/run_tests.sh --coverage
+pytest tests/ -v --cov=slurmheartbeat --cov-report=html
 ```
 
 ### Specific Test File
@@ -90,6 +80,8 @@ pytest tests/test_protocol.py -v
 ```bash
 pytest tests/test_protocol.py::test_heartbeat_message_serialization -v
 ```
+
+**Current Status**: ✅ 117/117 tests passing
 
 ## Test Coverage Goals
 
@@ -272,7 +264,9 @@ pytest -v --log-cli-level=DEBUG
 
 ## Performance Benchmarking
 
-### Latency Test
+**Note**: Performance benchmarking is not yet implemented. The current test suite focuses on functional correctness and security.
+
+### Latency Test (Future Work)
 
 ```python
 import time

@@ -88,10 +88,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Contact information updated
 
 ### Tests
-- **106/106 tests passing** (no regressions)
+- **117/117 tests passing** (11 new tests added)
 - **Ruff linting clean** - All checks pass
+- **Mypy clean** - 0 type errors
 - **Added tests for nested certificate format** in `test_server.py`
 - **Added tests for metrics initialization order** in `test_metrics.py`
+- **Added lifecycle tests** in `test_lifecycle.py` (double-start prevention, feature flag bypass)
 
 ### Known Limitations
 - Legacy `HeartbeatMessage` protocol still supported alongside EFP `ReadinessMessage`
@@ -256,4 +258,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-[0.1.0]: https://github.com/your-org/slurmheartbeat/releases/tag/v0.1.0
+[0.1.0]: https://github.com/saradamian/slurmheartbeat/releases/tag/v0.1.0

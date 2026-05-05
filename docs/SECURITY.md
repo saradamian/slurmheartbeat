@@ -117,27 +117,52 @@ def authorize_peer(cert: x509.Certificate, allowed_sites: list) -> bool:
 
 #### Signature Verification
 
-Optionally sign heartbeat messages:
+Optionally sign heartbeat messages with RSA-PKCS1v15:
 
 ```python
-import hashlib
-import hmac
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import padding
 
-def sign_message(message: dict, private_key: str) -> str:
-    """Sign heartbeat message with private key."""
+def sign_message(message: dict, private_key: Any) -> str:
+    """Sign heartbeat message with RSA private key."""
     message_json = json.dumps(message, sort_keys=True)
-    signature = hmac.new(
-        private_key.encode(),
+    
+    # Load private key if string (PEM bytes)
+    if isinstance(private_key, str):
+        private_key = serialization.load_pem_private_key(
+            private_key.encode(),
+            password=None,
+        )
+    
+    signature = private_key.sign(
         message_json.encode(),
-        hashlib.sha256
-    ).hexdigest()
-    return signature
+        padding.PKCS1v15(),
+        hashes.SHA256()
+    )
+    return base64.b64encode(signature).decode()
 
-def verify_message(message: dict, signature: str, public_key: str) -> bool:
-    """Verify heartbeat message signature."""
-    expected = sign_message(message, public_key)
-    return hmac.compare_digest(expected, signature)
+def verify_message(message: dict, signature: str, public_key: Any) -> bool:
+    """Verify heartbeat message signature with RSA public key."""
+    message_json = json.dumps(message, sort_keys=True)
+    
+    # Load public key if string (PEM bytes)
+    if isinstance(public_key, str):
+        public_key = serialization.load_pem_public_key(public_key.encode())
+    
+    try:
+        signature_bytes = base64.b64decode(signature)
+        public_key.verify(
+            signature_bytes,
+            message_json.encode(),
+            padding.PKCS1v15(),
+            hashes.SHA256()
+        )
+        return True
+    except Exception:
+        return False
 ```
+
+**Note**: The implementation uses RSA-PKCS1v15 asymmetric signing (not HMAC). Each federation member has a unique key pair, and signatures are verified using the peer's public key.
 
 ### 5. Rate Limiting
 

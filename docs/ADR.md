@@ -71,25 +71,38 @@ Need to define the communication protocol for heartbeat messages between federat
 4. **Extensibility**: Easy to add new fields without breaking compatibility
 5. **Tooling**: Excellent debugging tools (curl, browsers, etc.)
 
-### Message Format
+### Message Format (Current EFP Schema)
 
 ```json
 {
-  "version": "1.0",
-  "timestamp": "2025-01-09T10:30:00Z",
-  "cluster": {
-    "id": "lumi-prod",
-    "name": "LUMI Production",
-    "site": "CSC Finland"
+  "schema_version": "0.1",
+  "site_id": "lumi",
+  "cluster_name": "lumi-prod",
+  "observed_at": "2026-05-01T21:30:00Z",
+  "status": "ready",
+  "fed_state": "ACTIVE",
+  "reason": "scheduler_accepting_work",
+  "ttl_seconds": 90,
+  "signals": {
+    "slurmctld_reachable": true,
+    "slurm_federation_visible": true,
+    "maintenance": false,
+    "accepting_new_jobs": true,
+    "queue_pressure": "normal",
+    "critical_partitions_available": true
   },
-  "status": "healthy",
-  "resources": {
-    "total_nodes": 4320,
-    "active_nodes": 4318
+  "capacity_hint": {
+    "idle_nodes": 42,
+    "down_nodes": 0,
+    "drained_nodes": 3,
+    "pending_jobs": 120,
+    "running_jobs": 820
   },
-  "signature": "base64-encoded-signature"
+  "signature": "base64-encoded-RSA-signature"
 }
 ```
+
+**Note**: This is the EFP-aligned `ReadinessMessage` schema. The legacy `HeartbeatMessage` format is maintained for backward compatibility but is deprecated.
 
 ### Consequences
 

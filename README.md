@@ -253,7 +253,7 @@ pytest tests/ -v --cov=slurmheartbeat --cov-report=html
 pytest tests/test_schema.py -v
 ```
 
-**Current Status**: ✅ 106 tests passing
+**Current Status**: ✅ 117/117 tests passing
 
 ## Status Definitions
 

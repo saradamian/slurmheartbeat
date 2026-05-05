@@ -102,6 +102,9 @@ curl http://localhost:9090/metrics
 
 # Check health endpoint
 curl -k https://localhost:8443/health
+
+# Check readiness endpoint (requires mTLS client cert)
+curl --cert cert.pem --key key.pem --cacert ca.pem https://localhost:8443/readiness
 ```
 
 ## Production Checklist

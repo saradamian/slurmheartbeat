@@ -33,14 +33,14 @@ curl http://localhost:9090/metrics | grep heartbeat_latency
 ### Checking Federation Health
 
 ```bash
-# View all peer statuses
-python -c "
-from slurmheartbeat.server.state import FederationState
-state = FederationState.load()
-for peer, status in state.peers.items():
-    print(f'{peer}: {status.status} (last seen: {status.last_seen}s ago)')
-"
+# View readiness endpoint (requires mTLS client cert)
+curl --cert cert.pem --key key.pem --cacert ca.pem https://localhost:8443/readiness
+
+# View metrics
+curl http://localhost:9090/metrics | grep slurmheartbeat
 ```
+
+**Note**: The legacy `FederationState.load()` method and state file persistence are not implemented. Peer state is tracked in-memory only and rebuilt from heartbeats on restart.
 
 ## Weekly Operations
 
