@@ -289,7 +289,19 @@ pytest tests/test_schema.py -v
 
 ### Platform-Specific Examples
 
-- [Snellius (SURF) Deployment](examples/snellius/) - User-space deployment for Snellius HPC
+- [Snellius (SURF)](examples/snellius/) - User-space deployment for Snellius HPC (Netherlands)
+- [LUMI (CSC)](examples/lumi/) - Production deployment with systemd (Finland)
+- [MareNostrum5 (BSC)](examples/marenostrum/) - Production deployment with systemd (Spain)
+- [Leonardo (CRESCO)](examples/leonardo/) - Production deployment with systemd (Italy)
+- [JUPITER (FZ Jülich)](examples/jupiter/) - Production deployment with systemd (Germany)
+- [MeluXina (LuxProvide)](examples/meluxina/) - Production deployment with systemd (Luxembourg)
+- [Vega](examples/vega/) - User-space deployment (Slovenia)
+- [Isambard-AI](examples/isambard-ai/) - User-space deployment (UK)
+- [DEUCALION](examples/deucalion/) - User-space deployment (Spain)
+- [DAEDALUS](examples/daedalus/) - User-space deployment (Portugal)
+- [ARRHENIUS](examples/arrhenius/) - User-space deployment (Sweden)
+
+**See [examples/INDEX.md](examples/INDEX.md) for a complete overview of all platform examples.**
 
 ## Status Definitions
 
