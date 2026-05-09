@@ -340,6 +340,12 @@ pytest tests/test_schema.py -v
 
 **See [examples/INDEX.md](examples/INDEX.md) for a complete overview of all platform examples.**
 
+### Containerized Deployment
+
+- [Docker Deployment](docs/CONTAINER_DEPLOYMENT.md) - Run in Docker containers with Docker Compose
+- [Dockerfile](Dockerfile) - Container image definition
+- [docker-compose.yml](docker-compose.yml) - Multi-service setup with Prometheus
+
 ## Status Definitions
 
 Per EFP recommendation:
