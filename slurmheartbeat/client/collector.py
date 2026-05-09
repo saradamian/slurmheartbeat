@@ -128,7 +128,9 @@ class SlurmCollector:
             errors.append(e)
 
         # Set collect_success based on whether we got any data
-        metrics.collect_success = len(errors) == 0 or (metrics.cluster_name != "unknown" and metrics.node_stats.total > 0)
+        metrics.collect_success = len(errors) == 0 or (
+            metrics.cluster_name != "unknown" and metrics.node_stats.total > 0
+        )
 
         return metrics
 

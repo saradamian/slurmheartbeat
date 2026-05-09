@@ -224,6 +224,7 @@ class ReadinessPublisher:
         if self.signing_key_file and readiness.signature is None:
             try:
                 from slurmheartbeat.protocol.security import load_private_key
+
                 private_key = load_private_key(self.signing_key_file)
                 # sign() accepts both key objects and PEM bytes
                 readiness.sign(private_key)

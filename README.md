@@ -199,90 +199,46 @@ Key configuration sections:
                     Pull via /readiness or Push via heartbeat
 ```
 
-## EFP Gap Analysis & New Components
+## EFP Scope & Architecture
 
-This project addresses critical gaps in the EuroHPC Federation Platform (EFP) architecture:
+This project implements a **readiness publisher** for the EuroHPC Federation Platform (EFP), as recommended in [`docs/EFP_HEARTBEAT_RECOMMENDATION.md`](docs/EFP_HEARTBEAT_RECOMMENDATION.md).
 
-### Gap #1: Federated Capacity Discovery ✅ ADDRESSED
+### What This Does
 
-**Problem**: No unified view of aggregate idle capacity across EuroHPC sites. Researchers need to know WHERE to run jobs, not just HOW to access systems.
+Per EFP recommendation, this is a **narrow readiness signal**, not a replacement for:
+- Slurm native federation
+- Prometheus/OpenMetrics detailed telemetry
+- EFP scheduler or allocation logic
+- Cross-site workflow orchestration
 
-**Solution**: `slurmheartbeat/federation/aggregator.py`
-- Aggregates readiness signals from all EFP sites
-- Provides `/federated-capacity` endpoint with query-based filtering
-- Returns ranked list of sites with capacity hints
-- Supports queries like: "Find sites with >50 idle GPU nodes"
+The system produces a compact readiness document answering:
+> "Can this site safely receive federated work right now, and why or why not?"
 
-**Usage**:
-```python
-from slurmheartbeat.federation.aggregator import FederatedCapacityAggregator, CapacityQuery
+### Architecture
 
-aggregator = FederatedCapacityAggregator(peers=[...])
-await aggregator.start()
-
-query = CapacityQuery(min_idle_nodes=50, max_pending_jobs=100)
-result = aggregator.query(query)
-print(f"Found {len(result.sites)} sites with capacity")
-```
-
-### Gap #2: Cross-Site Queue Prediction ✅ ADDRESSED
-
-**Problem**: No wait-time prediction across sites. Users need to choose the FASTEST site for their job.
-
-**Solution**: `slurmheartbeat/federation/queue_predictor.py`
-- Predicts wait times based on queue depth and historical data
-- Recommends "best site" for job characteristics (nodes, GPUs, walltime)
-- Provides confidence scores and factor explanations
-
-**Usage**:
-```python
-from slurmheartbeat.federation.queue_predictor import QueuePredictor, JobCharacteristics
-
-predictor = QueuePredictor()
-job = JobCharacteristics(nodes_requested=4, gpus_requested=8, walltime_seconds=7200)
-best = predictor.recommend_best_site(sites, job)
-print(f"Recommended: {best.site_id}, wait: {best.estimated_wait_seconds}s")
-```
-
-### Gap #3: Federated Monitoring Aggregation ✅ ADDRESSED
-
-**Problem**: Each site has Prometheus/Grafana but no unified federated view. EFP operators need a single pane of glass.
-
-**Solution**: `slurmheartbeat/federation/monitor.py`
-- Aggregates Prometheus metrics from all sites
-- Provides `/federated-health` endpoint for EFP-wide health
-- Cross-site alert correlation (e.g., "5 sites down simultaneously")
-
-**Usage**:
-```python
-from slurmheartbeat.federation.monitor import FederatedMonitor
-
-monitor = FederatedMonitor(peers=[...])
-await monitor.start()
-
-health = monitor.get_health()
-print(f"Healthy: {health.healthy_sites}/{health.total_sites} sites")
-```
-
-### Gap #4: Federated Capacity HTTP Server ✅ ADDRESSED
-
-**Solution**: `slurmheartbeat/federation/server.py`
-- HTTP server for federated capacity discovery
-- Endpoints: `/federated-capacity`, `/federated-capacity/sites`, `/federated-capacity/health`
-- Query parameters: `min_idle_nodes`, `max_pending_jobs`, `required_status`, `exclude_sites`
-
-**Example Request**:
-```bash
-curl "http://localhost:8444/federated-capacity?min_idle_nodes=50&max_pending_jobs=100"
-```
+Each site runs a local readiness publisher that:
+1. **Collects** local Slurm state via `slurmrestd` (read-only)
+2. **Normalizes** to EFP schema (no user/job/account details)
+3. **Publishes** signed `/readiness` and `/metrics` endpoints
+4. **Optionally pushes** heartbeats to federation peers
 
 ### EFP Alignment
 
-All new components follow EFP recommendations:
+The implementation follows EFP recommendations:
 - **Read-only operation**: No modification of Slurm state
 - **mTLS authentication**: Secure cross-site communication
 - **TTL-based freshness**: Cache control for consumers
 - **No user/job/account data**: Privacy-preserving aggregation
+- **Authorization independent from signature**: Valid signature ≠ automatic access
+
+### Future Work (Not Yet Implemented)
+
+The following EFP gaps remain open for federation-wide decisions:
+- **Federated Capacity Discovery**: No unified view of aggregate idle capacity across sites (requires EFP-wide coordination)
+- **Cross-Site Queue Prediction**: No wait-time prediction across sites (requires historical data and EFP consensus)
+- **Federated Monitoring Aggregation**: No unified federated Prometheus/Grafana view (requires EFP monitoring architecture)
+
+These gaps are **not addressed by this codebase** and require EFP stakeholder decisions on consumption patterns, identity systems, and federation architecture.
 
 ---
 

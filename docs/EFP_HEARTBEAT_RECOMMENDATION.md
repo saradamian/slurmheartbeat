@@ -145,7 +145,22 @@ The project is useful if it can:
 
 ## Current Codebase Implication
 
-The current `slurmheartbeat` codebase is a reasonable experiment, but it is probably pointed too early toward a peer-to-peer daemon. Refocus it around a **local readiness contract** first, then add federation transport only after EFP confirms who consumes the signal and what security model they require.
+The `slurmheartbeat` codebase implements the **core readiness publisher** as recommended:
+- Local-only readiness generation from `slurmrestd` (read-only)
+- Stable JSON schema with timestamps, TTL, status, reason, and capacity hints
+- Prometheus metrics for the readiness service itself
+- Signed `/readiness` endpoint with mTLS authentication
+- Optional peer-to-peer heartbeat pushing (feature-flagged, legacy)
+
+**What is NOT implemented** (per EFP scope):
+- Federated capacity aggregation across sites (requires EFP-wide coordination)
+- Cross-site queue prediction (requires historical data and EFP consensus)
+- Federated monitoring aggregation (requires EFP monitoring architecture)
+- Automated job placement or scheduler logic
+
+The codebase correctly focuses on the **local readiness contract** first. Federation transport (peer-to-peer pushing, central collection) is optional and should only be added after EFP confirms who consumes the signal and what security model they require.
+
+**Status**: The implementation is **ALPHA READY** for pilot deployment on 1-2 test sites. It answers the operational question without overstepping into areas already covered by existing tools or making assumptions about undecided federation-wide decisions.
 
 ## References
 

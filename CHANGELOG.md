@@ -5,7 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.4.0] - 2026-05-04
+## [0.5.0] - 2026-05-04
+
+### Code Quality & Documentation
+
+#### Dead Code Removal
+- **Removed unused federation components** - Deleted `slurmheartbeat/federation/` directory
+  - `aggregator.py`, `monitor.py`, `queue_predictor.py`, `server.py` were prototype stubs
+  - Never wired into main.py (zero imports in production code)
+  - Documentation updated to remove false "✅ ADDRESSED" claims
+  - All 117 tests still pass (no regression)
+
+#### Documentation Corrections
+- **Updated README.md** - Removed misleading "Gap #1-4 ADDRESSED" section
+  - Clarified what the codebase DOES implement (core readiness publisher)
+  - Clarified what is NOT implemented (federated aggregation, queue prediction)
+  - Added "Future Work" section for EFP-wide decisions still needed
+- **Updated docs/EFP_HEARTBEAT_RECOMMENDATION.md** - Added "Current Codebase Implication" section
+  - Clarified ALPHA readiness status for pilot deployment
+  - Documented what is implemented vs. what requires EFP stakeholder decisions
 
 ### Critical Fixes (Audit 2026-05-02)
 

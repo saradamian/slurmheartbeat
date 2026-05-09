@@ -76,14 +76,18 @@ class HeartbeatDaemon:
                 PrometheusConfig as MetricsPrometheusConfig,
             )
 
-            self.metrics = MetricsServer(MetricsPrometheusConfig(
-                enabled=self.config.monitoring.prometheus.enabled,
-                port=self.config.monitoring.prometheus.port,
-                path=self.config.monitoring.prometheus.path,
-                listen_address=self.config.monitoring.prometheus.listen_address,
-            ))
+            self.metrics = MetricsServer(
+                MetricsPrometheusConfig(
+                    enabled=self.config.monitoring.prometheus.enabled,
+                    port=self.config.monitoring.prometheus.port,
+                    path=self.config.monitoring.prometheus.path,
+                    listen_address=self.config.monitoring.prometheus.listen_address,
+                )
+            )
             # Note: Metrics HTTP server is NOT started here - publisher serves /metrics endpoint
-            logger.info(f"Prometheus metrics available at port {self.config.monitoring.prometheus.port}")
+            logger.info(
+                f"Prometheus metrics available at port {self.config.monitoring.prometheus.port}"
+            )
 
         # Initialize components based on mode
         # In publisher mode, we still need collector/normalizer to generate readiness
@@ -100,7 +104,9 @@ class HeartbeatDaemon:
 
             # Only initialize sender if client is enabled
             if self.config.client.enabled:
-                self.sender = HeartbeatSender(self.config.client) if self.mode in ("client", "both") else None
+                self.sender = (
+                    HeartbeatSender(self.config.client) if self.mode in ("client", "both") else None
+                )
             else:
                 logger.info("Client heartbeat disabled (outgoing heartbeats)")
 
@@ -155,7 +161,9 @@ class HeartbeatDaemon:
             # client.enabled only gates the HeartbeatSender (outgoing heartbeats)
             self._tasks.append(asyncio.create_task(self._heartbeat_loop()))
             if not self.config.client.enabled:
-                logger.info("Outgoing heartbeats disabled (client.enabled=false), but readiness generation continues")
+                logger.info(
+                    "Outgoing heartbeats disabled (client.enabled=false), but readiness generation continues"
+                )
 
         logger.info("Slurm Heartbeat daemon started successfully")
 
@@ -283,7 +291,9 @@ class HeartbeatDaemon:
                                     last_seen.replace("Z", "+00:00")
                                 )
                                 last_seen_seconds = int(
-                                    (datetime.utcnow() - last_seen_dt.replace(tzinfo=None)).total_seconds()
+                                    (
+                                        datetime.utcnow() - last_seen_dt.replace(tzinfo=None)
+                                    ).total_seconds()
                                 )
                             except Exception:
                                 last_seen_seconds = 0
@@ -306,7 +316,9 @@ class HeartbeatDaemon:
         """
         # Check for maintenance file using configurable path
         # Note: Simple file existence check doesn't block event loop
-        maintenance_path = getattr(self.config.server, "maintenance_path", "/var/run/slurm/heartbeat/maintenance")
+        maintenance_path = getattr(
+            self.config.server, "maintenance_path", "/var/run/slurm/heartbeat/maintenance"
+        )
         maintenance_file = Path(maintenance_path)
         try:
             return maintenance_file.exists()

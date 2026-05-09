@@ -77,7 +77,9 @@ class ServerConfig:
     enable_legacy_p2p: bool = False  # Feature flag, default to False per audit
     peer_public_keys: dict[str, str] = field(default_factory=dict)  # For signature verification
     signing_key_file: str | None = None  # Optional key for message signing
-    maintenance_path: str = "/var/run/slurm/heartbeat/maintenance"  # Configurable maintenance file path
+    maintenance_path: str = (
+        "/var/run/slurm/heartbeat/maintenance"  # Configurable maintenance file path
+    )
 
 
 @dataclass

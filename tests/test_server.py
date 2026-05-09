@@ -447,7 +447,13 @@ class TestReadinessPublisher:
         config = ServerConfig()
         prometheus_config = PrometheusConfig(enabled=True)
         metrics = MetricsServer(prometheus_config)
-        publisher = ReadinessPublisher(config, "test-site", "test-cluster", metrics=metrics, prometheus_config=prometheus_config)
+        publisher = ReadinessPublisher(
+            config,
+            "test-site",
+            "test-cluster",
+            metrics=metrics,
+            prometheus_config=prometheus_config,
+        )
 
         # Get metrics - should return string, not awaitable
         metrics_text = publisher._metrics.get_metrics()

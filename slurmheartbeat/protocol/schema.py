@@ -56,7 +56,9 @@ class Signals:
             "slurm_federation_visible": self.slurm_federation_visible,
             "maintenance": self.maintenance,
             "accepting_new_jobs": self.accepting_new_jobs,
-            "queue_pressure": self.queue_pressure.value if isinstance(self.queue_pressure, QueuePressure) else self.queue_pressure,
+            "queue_pressure": self.queue_pressure.value
+            if isinstance(self.queue_pressure, QueuePressure)
+            else self.queue_pressure,
             "critical_partitions_available": self.critical_partitions_available,
         }
 
@@ -151,24 +153,36 @@ class ReadinessMessage:
             "site_id": self.site_id,
             "cluster_name": self.cluster_name,
             "observed_at": self.observed_at,
-            "status": self.status.value if isinstance(self.status, ReadinessStatus) else self.status,
+            "status": self.status.value
+            if isinstance(self.status, ReadinessStatus)
+            else self.status,
             "fed_state": self.fed_state,
             "reason": self.reason,
             "ttl_seconds": self.ttl_seconds,
-            "signals": self.signals.to_dict() if hasattr(self.signals, 'to_dict') else {
+            "signals": self.signals.to_dict()
+            if hasattr(self.signals, "to_dict")
+            else {
                 "slurmctld_reachable": self.signals.slurmctld_reachable,
-                "slurm_federation_visible": getattr(self.signals, 'slurm_federation_visible', False),
+                "slurm_federation_visible": getattr(
+                    self.signals, "slurm_federation_visible", False
+                ),
                 "maintenance": self.signals.maintenance,
-                "accepting_new_jobs": getattr(self.signals, 'accepting_new_jobs', True),
-                "queue_pressure": self.signals.queue_pressure.value if isinstance(self.signals.queue_pressure, QueuePressure) else self.signals.queue_pressure,
-                "critical_partitions_available": getattr(self.signals, 'critical_partitions_available', True),
+                "accepting_new_jobs": getattr(self.signals, "accepting_new_jobs", True),
+                "queue_pressure": self.signals.queue_pressure.value
+                if isinstance(self.signals.queue_pressure, QueuePressure)
+                else self.signals.queue_pressure,
+                "critical_partitions_available": getattr(
+                    self.signals, "critical_partitions_available", True
+                ),
             },
-            "capacity_hint": self.capacity_hint.to_dict() if hasattr(self.capacity_hint, 'to_dict') else {
-                "idle_nodes": getattr(self.capacity_hint, 'idle_nodes', 0),
-                "down_nodes": getattr(self.capacity_hint, 'down_nodes', 0),
-                "drained_nodes": getattr(self.capacity_hint, 'drained_nodes', 0),
-                "pending_jobs": getattr(self.capacity_hint, 'pending_jobs', 0),
-                "running_jobs": getattr(self.capacity_hint, 'running_jobs', 0),
+            "capacity_hint": self.capacity_hint.to_dict()
+            if hasattr(self.capacity_hint, "to_dict")
+            else {
+                "idle_nodes": getattr(self.capacity_hint, "idle_nodes", 0),
+                "down_nodes": getattr(self.capacity_hint, "down_nodes", 0),
+                "drained_nodes": getattr(self.capacity_hint, "drained_nodes", 0),
+                "pending_jobs": getattr(self.capacity_hint, "pending_jobs", 0),
+                "running_jobs": getattr(self.capacity_hint, "running_jobs", 0),
             },
             "signature": self.signature,
         }
@@ -290,7 +304,9 @@ class ReadinessMessage:
             try:
                 message_json = self.to_json()
                 # RSA-only at runtime - suppress mypy errors for non-RSA key types
-                public_key.verify(signature_bytes, message_json.encode(), padding.PKCS1v15(), hashes.SHA256())  # type: ignore
+                public_key.verify(
+                    signature_bytes, message_json.encode(), padding.PKCS1v15(), hashes.SHA256()
+                )  # type: ignore
                 return True
             finally:
                 self.signature = original_signature

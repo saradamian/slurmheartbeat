@@ -187,9 +187,13 @@ def sample_client_config():
         retry_count=3,
         retry_backoff=1.0,
         slurm=SlurmConfig(api_url="http://localhost:6875", api_version="0.0.39", timeout=5),
-        federation=FederationConfig(peers=[
-            PeerConfig(name="test-peer", endpoint="https://test.example.com:8443", site="test-site")
-        ]),
+        federation=FederationConfig(
+            peers=[
+                PeerConfig(
+                    name="test-peer", endpoint="https://test.example.com:8443", site="test-site"
+                )
+            ]
+        ),
     )
     return config
 
