@@ -223,7 +223,7 @@ class HeartbeatSender:
                         latency_ms=0,
                         error=str(result),
                     )
-                )
+                )  # type: ignore[arg-type]
             elif isinstance(result, SendResult):
                 processed_results.append(result)
 

@@ -194,16 +194,16 @@ class HeartbeatReceiver:
     async def _handle_heartbeat(self, request: web.Request) -> dict[str, Any]:
         """Handle incoming heartbeat request."""
         # Placeholder for HTTP handler
-        return {"status": "ok"}
+        return {"status": "ok"}  # type: ignore[return-value]
 
     async def _handle_health(self, request: web.Request) -> dict[str, Any]:
         """Handle health check request."""
-        return {"status": "healthy"}
+        return {"status": "healthy"}  # type: ignore[return-value]
 
     async def _handle_peers(self, request: web.Request) -> dict[str, Any]:
         """Handle peers list request."""
         peers = await self.state.get_all_peers()
-        return {"peers": [p.name for p in peers]}
+        return {"peers": [p.name for p in peers]}  # type: ignore[return-value]
 
     async def start(self) -> None:
         """Start the receiver server."""

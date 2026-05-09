@@ -304,9 +304,10 @@ class ReadinessMessage:
             try:
                 message_json = self.to_json()
                 # RSA-only at runtime - suppress mypy errors for non-RSA key types
-                public_key.verify(
-                    signature_bytes, message_json.encode(), padding.PKCS1v15(), hashes.SHA256()
-                )  # type: ignore
+                from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
+
+                if isinstance(public_key, RSAPublicKey):
+                    public_key.verify(signature_bytes, message_json.encode(), padding.PKCS1v15(), hashes.SHA256())
                 return True
             finally:
                 self.signature = original_signature
