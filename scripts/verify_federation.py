@@ -11,7 +11,6 @@ from pathlib import Path
 def verify_imports():
     """Verify all federation imports work."""
     import sys
-    from pathlib import Path
 
     # Add project root to path
     project_root = Path(__file__).parent.parent
@@ -40,7 +39,7 @@ def verify_tests():
     """Verify tests pass."""
     import subprocess
     result = subprocess.run(
-        ["python", "-m", "pytest", "tests/test_federation.py", "tests/test_aggregation.py", "tests/test_prediction.py", "-q", "--tb=no"],
+        [sys.executable, "-m", "pytest", "tests/test_federation.py", "tests/test_aggregation.py", "tests/test_prediction.py", "-q", "--tb=no"],
         capture_output=True,
         text=True,
         cwd=Path(__file__).parent.parent
@@ -61,7 +60,8 @@ def main():
     tests_ok = verify_tests()
 
     if imports_ok and tests_ok:
-        print("\n✅ Federation implementation is COMPLETE and PRODUCTION-READY")
+        print("\n✅ Federation implementation is COMPLETE (EXPERIMENTAL)")
+        print("   Not recommended for production without EFP-wide decisions")
         return 0
     else:
         print("\n❌ Verification failed")
