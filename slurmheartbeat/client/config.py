@@ -33,6 +33,10 @@ class FederationConfig:
 
     peers: list[PeerConfig] = field(default_factory=list)
     peer_public_keys: dict[str, str] = field(default_factory=dict)
+    enabled: bool = False  # Feature flag - disabled by default
+    aggregation_interval_seconds: int = 60  # How often to aggregate peer metrics
+    peer_timeout_seconds: int = 30  # Timeout for peer requests
+    max_history_size: int = 100  # Maximum history entries for trend analysis
 
 
 @dataclass

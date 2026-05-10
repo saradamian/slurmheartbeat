@@ -52,16 +52,27 @@ client:
     
   # Federation peers to send heartbeats to
   federation:
+    enabled: false  # Feature flag - set to true to enable federation features
     peers:
       - name: "leonardo"
-        endpoint: "https://leonardo.example.com:8443/heartbeat"
+        endpoint: "https://leonardo.example.com:8443/readiness"  # Changed to /readiness for EFP
         site: "CINECA Italy"
         timeout_seconds: 30
         
       - name: "mars"
-        endpoint: "https://mars.example.com:8443/heartbeat"
+        endpoint: "https://mars.example.com:8443/readiness"
         site: "HLRS Germany"
         timeout_seconds: 30
+    
+    # Peer public keys for signature verification
+    # Format: peer_name -> PEM-encoded public key
+    # Leave empty if not using signature verification
+    peer_public_keys: {}  # Empty dict, not None
+    
+    # Aggregation settings
+    aggregation_interval_seconds: 60  # How often to aggregate peer metrics
+    peer_timeout_seconds: 30  # Timeout for peer requests
+    max_history_size: 100  # Maximum history entries for trend analysis
 
 # Server configuration - serves readiness and receives heartbeats
 server:
@@ -108,7 +119,6 @@ server:
   # signing_key_file: "/etc/slurm/heartbeat/signing-key.pem"
 
 # Note: The following sections are NOT yet implemented and will be ignored:
-# - federation (state persistence, thresholds)
 # - monitoring.alerting (webhook, email notifications)
 # - security.certificate (auto-rotation)
 # - security.access_control (IP restrictions, rate limiting)
@@ -121,3 +131,4 @@ server:
 # - client (Slurm integration, federation peers, TLS)
 # - server (authorization, TLS, feature flags)
 # - monitoring.prometheus (metrics export)
+# - client.federation (peer discovery, capacity aggregation, queue prediction)
