@@ -271,11 +271,12 @@ These features are **experimental** and can be enabled via `client.federation.en
 
 **⚠️ ALPHA READINESS ADAPTER** - Core functionality working, production hardening in progress
 
-- **Tests**: 117/117 passing
-- **Linting**: Ruff clean
+- **Tests**: 149/149 passing (including 32 federation tests)
+- **Linting**: Ruff clean (0 errors)
 - **Type Checking**: Mypy clean (0 errors)
 - **Critical Fixes**: 14/14 audit findings addressed (all fixed)
 - **EFP Alignment**: Schema compliant, lifecycle fixes complete
+- **Federation Features**: 🚧 Experimental (implemented but not production-ready)
 
 ### Resolved Audit Findings (2026-05-04)
 
