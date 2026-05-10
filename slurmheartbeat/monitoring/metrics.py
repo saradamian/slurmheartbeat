@@ -165,6 +165,48 @@ class MetricsServer:
             registry=self._registry,
         )
 
+        # Federation metrics (if enabled)
+        self.federation_idle_nodes = Gauge(
+            "slurmheartbeat_federation_idle_nodes",
+            "Total idle nodes across federation",
+            registry=self._registry,
+        )
+        self.federation_drained_nodes = Gauge(
+            "slurmheartbeat_federation_drained_nodes",
+            "Total drained nodes across federation",
+            registry=self._registry,
+        )
+        self.federation_down_nodes = Gauge(
+            "slurmheartbeat_federation_down_nodes",
+            "Total down nodes across federation",
+            registry=self._registry,
+        )
+        self.federation_pending_jobs = Gauge(
+            "slurmheartbeat_federation_pending_jobs",
+            "Total pending jobs across federation",
+            registry=self._registry,
+        )
+        self.federation_running_jobs = Gauge(
+            "slurmheartbeat_federation_running_jobs",
+            "Total running jobs across federation",
+            registry=self._registry,
+        )
+        self.federation_peer_count = Gauge(
+            "slurmheartbeat_federation_peer_count",
+            "Total federation peers",
+            registry=self._registry,
+        )
+        self.federation_healthy_peers = Gauge(
+            "slurmheartbeat_federation_healthy_peers",
+            "Healthy federation peers",
+            registry=self._registry,
+        )
+        self.federation_health = Gauge(
+            "slurmheartbeat_federation_health",
+            "Federation health (1=healthy, 0.5=degraded, 0=critical, -1=unhealthy, -2=no_peers)",
+            registry=self._registry,
+        )
+
         MetricsServer._metrics_initialized = True
 
     async def start(self) -> None:
@@ -315,6 +357,47 @@ class MetricsServer:
             "unknown": 0,
         }
         self.peer_status.labels(site=site).set(status_map.get(status, 0))
+
+    def update_federation_metrics(
+        self,
+        idle_nodes: int,
+        drained_nodes: int,
+        down_nodes: int,
+        pending_jobs: int,
+        running_jobs: int,
+        peer_count: int,
+        healthy_peers: int,
+        health_status: str,
+    ) -> None:
+        """Update federation metrics.
+
+        Args:
+            idle_nodes: Total idle nodes across federation.
+            drained_nodes: Total drained nodes across federation.
+            down_nodes: Total down nodes across federation.
+            pending_jobs: Total pending jobs across federation.
+            running_jobs: Total running jobs across federation.
+            peer_count: Total federation peers.
+            healthy_peers: Healthy federation peers.
+            health_status: Federation health status string.
+        """
+        self.federation_idle_nodes.set(idle_nodes)
+        self.federation_drained_nodes.set(drained_nodes)
+        self.federation_down_nodes.set(down_nodes)
+        self.federation_pending_jobs.set(pending_jobs)
+        self.federation_running_jobs.set(running_jobs)
+        self.federation_peer_count.set(peer_count)
+        self.federation_healthy_peers.set(healthy_peers)
+
+        # Map health status to numeric value
+        health_map = {
+            "healthy": 1.0,
+            "degraded": 0.5,
+            "critical": 0.0,
+            "unhealthy": 0.0,
+            "no_peers": -1.0,
+        }
+        self.federation_health.set(health_map.get(health_status, -2.0))
 
 
 __all__ = ["MetricsServer", "PrometheusConfig"]

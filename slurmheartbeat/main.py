@@ -23,6 +23,9 @@ from slurmheartbeat.client.collector import SlurmCollector
 from slurmheartbeat.client.config import ClientConfig
 from slurmheartbeat.client.normalizer import ReadinessNormalizer
 from slurmheartbeat.client.sender import HeartbeatSender
+from slurmheartbeat.federation.aggregation import MetricsAggregator
+from slurmheartbeat.federation.discovery import FederationDiscovery
+from slurmheartbeat.federation.prediction import QueuePredictor
 from slurmheartbeat.monitoring.metrics import MetricsServer
 from slurmheartbeat.server.publisher import ReadinessPublisher
 from slurmheartbeat.server.receiver import HeartbeatReceiver
@@ -63,6 +66,11 @@ class HeartbeatDaemon:
         self.metrics: MetricsServer | None = None
         self._running = False
         self._tasks: list[asyncio.Task] = []
+
+        # Federation components (initialized in start() if enabled)
+        self.federation_discovery: FederationDiscovery | None = None
+        self.queue_predictor: QueuePredictor | None = None
+        self.metrics_aggregator: MetricsAggregator | None = None
 
     async def start(self) -> None:
         """Start the heartbeat daemon."""
@@ -122,6 +130,8 @@ class HeartbeatDaemon:
                 metrics=self.metrics,  # Pass shared metrics instance (or None)
                 signing_key_file=self.config.server.signing_key_file,
                 prometheus_config=self.config.monitoring.prometheus,
+                federation_discovery=self.federation_discovery,
+                metrics_aggregator=self.metrics_aggregator,
             )
 
         # Only start legacy P2P receiver if explicitly enabled (feature flag)
@@ -131,6 +141,13 @@ class HeartbeatDaemon:
             and getattr(self.config.server, "enable_legacy_p2p", False)
         ):
             self.receiver = HeartbeatReceiver(self.config.server)
+
+        # Initialize federation components if enabled
+        if self.config.client.federation.enabled:
+            self.federation_discovery = FederationDiscovery(self.config)
+            self.queue_predictor = QueuePredictor()
+            self.metrics_aggregator = MetricsAggregator()
+            logger.info("Federation components initialized")
 
         # Start components (publisher starts its own HTTP server, metrics already started above)
         if self.receiver:
@@ -144,6 +161,11 @@ class HeartbeatDaemon:
             logger.info(
                 f"Readiness publisher started on {self.config.server.listen_address}:{self.config.server.listen_port}"
             )
+
+        # Start federation components if enabled
+        if self.federation_discovery:
+            await self.federation_discovery.discover_peers()
+            logger.info("Federation discovery started")
 
         # Update peer status metrics on startup
         if self.metrics and self.receiver:
@@ -188,6 +210,10 @@ class HeartbeatDaemon:
 
         if self.metrics:
             await self.metrics.stop()
+
+        # Stop federation components
+        if self.federation_discovery:
+            await self.federation_discovery.close()
 
         logger.info("Slurm Heartbeat daemon stopped")
 
@@ -271,6 +297,35 @@ class HeartbeatDaemon:
 
                 # Wait for next interval
                 await asyncio.sleep(self.config.client.interval_seconds)
+
+                # Federation aggregation (if enabled) - runs after main collection
+                if self.federation_discovery and self.metrics_aggregator and self.metrics:
+                    try:
+                        # Fetch capacity from all peers
+                        await self.federation_discovery.fetch_all_peers(
+                            timeout=self.config.client.federation.peer_timeout_seconds
+                        )
+
+                        # Update metrics aggregator with fetched capacities
+                        # Note: FederationDiscovery.state.peers already updated by fetch_all_peers
+                        peers = list(self.federation_discovery.state.peers.values())
+                        if peers:
+                            aggregated = self.metrics_aggregator.aggregate_peer_metrics(peers)
+
+                            # Update Prometheus metrics with federation data
+                            self.metrics.update_federation_metrics(
+                                idle_nodes=aggregated.total_idle_nodes,
+                                drained_nodes=aggregated.total_drained_nodes,
+                                down_nodes=aggregated.total_down_nodes,
+                                pending_jobs=aggregated.total_pending_jobs,
+                                running_jobs=aggregated.total_running_jobs,
+                                peer_count=aggregated.peer_count,
+                                healthy_peers=aggregated.healthy_peer_count,
+                                health_status=aggregated.federation_health,
+                            )
+
+                    except Exception as e:
+                        logger.warning(f"Federation aggregation error: {e}")
 
                 # Update peer status metrics
                 if self.metrics and self.receiver:

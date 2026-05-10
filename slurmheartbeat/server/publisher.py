@@ -18,6 +18,8 @@ from aiohttp import web
 
 if TYPE_CHECKING:
     from slurmheartbeat.client.config import PrometheusConfig, ServerConfig
+    from slurmheartbeat.federation.aggregation import MetricsAggregator
+    from slurmheartbeat.federation.discovery import FederationDiscovery
     from slurmheartbeat.monitoring.metrics import MetricsServer
     from slurmheartbeat.protocol.schema import ReadinessMessage
 
@@ -56,6 +58,8 @@ class ReadinessPublisher:
         metrics: MetricsServer | None = None,
         signing_key_file: str | None = None,
         prometheus_config: PrometheusConfig | None = None,
+        federation_discovery: FederationDiscovery | None = None,
+        metrics_aggregator: MetricsAggregator | None = None,
     ):
         """Initialize the readiness publisher.
 
@@ -68,6 +72,8 @@ class ReadinessPublisher:
             metrics: Optional metrics server instance (uses default if not provided)
             signing_key_file: Path to private key for signing readiness documents (optional)
             prometheus_config: Prometheus config for creating default metrics (if metrics=None)
+            federation_discovery: Optional federation discovery instance for peer data
+            metrics_aggregator: Optional metrics aggregator for federation metrics
         """
         self.config = config
         self.site_id = site_id
@@ -76,6 +82,8 @@ class ReadinessPublisher:
         self.ttl_seconds = ttl_seconds
         self.signing_key_file = signing_key_file
         self._prometheus_config = prometheus_config
+        self._federation_discovery = federation_discovery
+        self._metrics_aggregator = metrics_aggregator
 
         self.state = ReadinessState(
             site_id=site_id,
@@ -104,6 +112,9 @@ class ReadinessPublisher:
         self._app.router.add_get("/readiness", self._handle_readiness)
         self._app.router.add_get("/metrics", self._handle_metrics)
         self._app.router.add_get("/health", self._handle_health)
+        self._app.router.add_get("/federated/peers", self._handle_federated_peers)
+        self._app.router.add_get("/federated/queues", self._handle_federated_queues)
+        self._app.router.add_get("/federated/metrics", self._handle_federated_metrics)
 
         # Note: Metrics server is started by main.py, not here
         # Publisher only serves /metrics endpoint using the shared registry
@@ -365,6 +376,148 @@ class ReadinessPublisher:
             return False
 
         return peer_name in allowed_sites
+
+    async def _handle_federated_peers(self, request: web.Request) -> web.Response:
+        """Handle /federated/peers endpoint.
+
+        Returns list of federation peers and their status.
+        Requires mTLS client certificate.
+        """
+        # Check for client certificate (mTLS)
+        peer_name = self._extract_peer_name(request)
+        if not peer_name:
+            return web.json_response(
+                {"error": "Client certificate required"},
+                status=403,
+            )
+
+        # Check authorization
+        if not self._is_authorized(peer_name):
+            return web.json_response(
+                {"error": "Not authorized"},
+                status=403,
+            )
+
+        # Get federation state from discovery component
+        if self._federation_discovery:
+            summary = self._federation_discovery.get_federation_summary()
+            return web.json_response(summary)
+
+        # Return empty structure if federation not enabled
+        return web.json_response({
+            "peer_count": 0,
+            "peers": [],
+            "message": "Federation not enabled",
+        })
+
+    async def _handle_federated_queues(self, request: web.Request) -> web.Response:
+        """Handle /federated/queues endpoint.
+
+        Returns aggregated queue predictions across federation.
+        Requires mTLS client certificate.
+        """
+        # Check for client certificate (mTLS)
+        peer_name = self._extract_peer_name(request)
+        if not peer_name:
+            return web.json_response(
+                {"error": "Client certificate required"},
+                status=403,
+            )
+
+        # Check authorization
+        if not self._is_authorized(peer_name):
+            return web.json_response(
+                {"error": "Not authorized"},
+                status=403,
+            )
+
+        # Get queue predictions from federation discovery
+        if self._federation_discovery and self._federation_discovery.state.peers:
+            from slurmheartbeat.federation.prediction import QueuePredictor
+
+            predictor = QueuePredictor()
+            predictions = []
+
+            for peer in self._federation_discovery.state.peers.values():
+                if peer.is_healthy():
+                    prediction = predictor.predict(peer.capacity_hint)
+                    predictions.append({
+                        "peer": peer.name,
+                        "site": peer.site,
+                        "prediction": prediction.to_dict(),
+                    })
+
+            return web.json_response({
+                "queue_predictions": predictions,
+                "generated_at": datetime.utcnow().isoformat(),
+            })
+
+        # Return empty structure if no federation data
+        return web.json_response({
+            "queue_predictions": [],
+            "message": "No federation data available",
+        })
+
+    async def _handle_federated_metrics(self, request: web.Request) -> web.Response:
+        """Handle /federated/metrics endpoint.
+
+        Returns aggregated metrics across federation peers.
+        Requires mTLS client certificate.
+        """
+        # Check for client certificate (mTLS)
+        peer_name = self._extract_peer_name(request)
+        if not peer_name:
+            return web.json_response(
+                {"error": "Client certificate required"},
+                status=403,
+            )
+
+        # Check authorization
+        if not self._is_authorized(peer_name):
+            return web.json_response(
+                {"error": "Not authorized"},
+                status=403,
+            )
+
+        # Get federation report from aggregator
+        if self._federation_discovery and self._metrics_aggregator:
+            peers = list(self._federation_discovery.state.peers.values())
+            if peers:
+                report = self._metrics_aggregator.generate_federation_report(peers)
+
+                # Convert to Prometheus format
+                metrics_text = "# Federation metrics\n"
+                metrics_text += f"slurmheartbeat_federation_idle_nodes {report['metrics']['total_idle_nodes']}\n"
+                metrics_text += f"slurmheartbeat_federation_drained_nodes {report['metrics']['total_drained_nodes']}\n"
+                metrics_text += f"slurmheartbeat_federation_down_nodes {report['metrics']['total_down_nodes']}\n"
+                metrics_text += f"slurmheartbeat_federation_pending_jobs {report['metrics']['total_pending_jobs']}\n"
+                metrics_text += f"slurmheartbeat_federation_running_jobs {report['metrics']['total_running_jobs']}\n"
+                metrics_text += f"slurmheartbeat_federation_peer_count {report['metrics']['peer_count']}\n"
+                metrics_text += f"slurmheartbeat_federation_healthy_peers {report['metrics']['healthy_peer_count']}\n"
+
+                # Map health status to numeric value
+                health_map = {"healthy": 1.0, "degraded": 0.5, "critical": 0.0, "unhealthy": 0.0, "no_peers": -1.0}
+                health_value = health_map.get(report['metrics']['federation_health'], -1.0)
+                metrics_text += f"slurmheartbeat_federation_health {health_value}\n"
+
+                return web.Response(
+                    text=metrics_text,
+                    content_type="text/plain",
+                )
+
+        # Return empty metrics if federation not enabled
+        return web.Response(
+            text="# Federation metrics not available\n"
+                 "slurmheartbeat_federation_idle_nodes 0\n"
+                 "slurmheartbeat_federation_drained_nodes 0\n"
+                 "slurmheartbeat_federation_down_nodes 0\n"
+                 "slurmheartbeat_federation_pending_jobs 0\n"
+                 "slurmheartbeat_federation_running_jobs 0\n"
+                 "slurmheartbeat_federation_peer_count 0\n"
+                 "slurmheartbeat_federation_healthy_peers 0\n"
+                 "slurmheartbeat_federation_health -1.0\n",
+            content_type="text/plain",
+        )
 
 
 __all__ = ["ReadinessPublisher", "ReadinessState"]

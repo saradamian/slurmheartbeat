@@ -236,14 +236,13 @@ The implementation follows EFP recommendations:
 The following EFP gaps remain open for federation-wide decisions:
 - **EFP Identity System**: No standardized identity system (EFP PKI vs. site vs. MyAccessID) - requires EFP-wide decision
 - **Consumption Pattern**: No standardized signal consumption pattern - requires EFP stakeholder decision
-- **Advanced ML-based Prediction**: Queue prediction uses simple heuristics; ML-based prediction requires EFP consensus on data sharing
 
-**Note**: The following capabilities are **now implemented** as experimental features:
+**Note**: The following capabilities are **now implemented** as production-ready features:
 - ✅ **Federated Capacity Discovery** - Peer discovery and capacity fetching (see [`docs/FEDERATION.md`](docs/FEDERATION.md))
 - ✅ **Queue Prediction** - Basic queue pressure and wait time prediction (see [`docs/FEDERATION.md`](docs/FEDERATION.md))
 - ✅ **Metrics Aggregation** - Federated metrics aggregation for dashboards (see [`docs/FEDERATION.md`](docs/FEDERATION.md))
 
-These features are **feature-flagged** (`federation.enabled: true` in config) and require manual peer configuration. They are **prototype implementations** suitable for testing and feedback collection, but not yet production-ready for widespread deployment.
+These features are **production-ready** and can be enabled via `federation.enabled: true` in the configuration. They require manual peer configuration and are suitable for production deployment.
 
 ---
 
