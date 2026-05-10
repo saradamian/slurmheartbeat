@@ -1,4 +1,6 @@
-# Federated Capacity Discovery and Monitoring
+# Federated Capacity Discovery and Monitoring (Experimental)
+
+> **Status**: 🚧 **EXPERIMENTAL** - Components implemented but not production-ready
 
 This document describes the federation components for Slurm Heartbeat, which enable EuroHPC Federation Platform (EFP) integration through peer discovery, capacity aggregation, and queue prediction.
 
@@ -9,6 +11,8 @@ The federation components provide three main capabilities:
 1. **Federated Capacity Discovery** - Discover and fetch capacity hints from federation peers
 2. **Queue Prediction** - Predict queue pressure and wait times based on historical patterns
 3. **Metrics Aggregation** - Aggregate metrics across multiple federation peers
+
+**⚠️ Important**: These features are **experimental** and require EFP-wide decisions on identity systems and consumption patterns before production deployment.
 
 ## Components
 
@@ -187,12 +191,13 @@ The federation components align with the EFP recommendation:
 - ✅ **Read-only operation** - No Slurm state modification
 - ✅ **Authorization independent from signature** - Separate from signature verification
 
-## Limitations
+## Limitations and Risks
 
 1. **Unproven at scale** - No production deployments yet
 2. **Value tied to EFP adoption** - Market risk as EFP is new (April 2026)
-3. **Consumption pattern undecided** - EFP-wide decision on signal consumption
-4. **Identity system undecided** - EFP PKI vs. site vs. MyAccessID
+3. **Consumption pattern undecided** - EFP-wide decision on signal consumption pending
+4. **Identity system undecided** - EFP PKI vs. site vs. MyAccessID requires EFP-wide decision
+5. **Experimental status** - Not recommended for production use without EFP stakeholder approval
 
 ## Future Work
 

@@ -1,18 +1,60 @@
 # Documentation Consolidation Summary
 
-**Date**: 2026-05-02  
+**Date**: 2026-05-10  
 **Purpose**: Document the consolidation of Slurm Heartbeat documentation to reduce redundancy and improve maintainability.
 
 ## Consolidation Process
 
-### Files Merged
-- **QUICKSTART.md** → Merged into **README.md** (Quick Start section enhanced with testing commands)
-- **TEST_ENVIRONMENT_SETUP.md** → Content merged into **docs/TESTING.md**
-- **SECURITY_FIXES.md** → Key fixes documented in **CHANGELOG.md**
-- **REQUIREMENTS.md** → Covered by **requirements.txt** and **docs/DEPLOYMENT.md**
-- **LINTING.md** → Covered by **docs/TESTING.md** and `.ruff.toml`
+### Files Updated (Current Session)
 
-### Files Deleted (Historical/Process)
+The following files were updated to accurately reflect the **experimental status** of federation components:
+
+- **`docs/FEDERATION.md`** - Updated to mark federation features as "🚧 EXPERIMENTAL" with clear warnings about production readiness
+- **`README.md`** - Updated federation section to reflect experimental status and remove "production-ready" claims
+- **`docs/FEDERATION_IMPLEMENTATION_STATUS.md`** - Updated to accurately reflect experimental status and production readiness assessment
+- **`docs/FEDERATION_COMPLETE.md`** - Updated to clarify "COMPLETE (Experimental)" status
+
+### Files Retained (Core Documentation)
+
+The following files constitute the permanent documentation set:
+
+#### User-Facing Documentation
+- **`README.md`** - Main entry point with quick start
+- **`docs/INSTALLATION.md`** - Complete installation and deployment guide
+- **`docs/DEPLOYMENT.md`** - Production deployment considerations
+- **`docs/OPERATIONS.md`** - Operations, monitoring, and maintenance
+- **`docs/SECURITY.md`** - Security model, mTLS, and signing
+- **`docs/TESTING.md`** - Testing procedures and lifecycle tests
+- **`docs/ADR.md`** - Architecture Decision Records (ADR-001 through ADR-008)
+- **`docs/GLOSSARY.md`** - Terminology and definitions
+- **`docs/EFP_HEARTBEAT_RECOMMENDATION.md`** - EFP requirements and scope (critical context)
+
+#### Federation Documentation
+- **`docs/FEDERATION.md`** - Federation components guide (experimental features)
+- **`docs/FEDERATION_IMPLEMENTATION_STATUS.md`** - Implementation status and production readiness assessment
+- **`docs/FEDERATION_COMPLETE.md`** - Verification summary and next steps
+
+#### Project Files
+- **`CHANGELOG.md`** - Version history and changes
+- **`CONTRIBUTING.md`** - Contribution guidelines
+- **`LICENSE`** - Apache License 2.0
+- **`config.example.yaml`** - Configuration reference
+- **`docs/CONSOLIDATION_SUMMARY.md`** - This document
+
+#### Configuration and Build
+- `pyproject.toml` - Project configuration
+- `requirements.txt` - Python dependencies
+- `.ruff.toml` - Linting configuration
+- `.pre-commit-config.yaml` - Pre-commit hooks
+- `pytest.ini` - Test configuration
+
+#### Scripts and System Files
+- `scripts/generate_certs.sh` - Certificate generation
+- `scripts/run_tests.sh` - Test runner
+- `systemd/slurm-heartbeat.service` - systemd service file
+
+### Files Removed (Historical/Process)
+
 The following files were removed as they contained historical process documentation, not actionable reference material:
 
 - `IMPLEMENTATION_PLAN.md` - Historical planning document
@@ -37,37 +79,6 @@ The following files were removed as they contained historical process documentat
 - `TECHNICAL_DESIGN.md` - Design decisions now in docs/ADR.md
 - `QUICKSTART.md` - Merged into README.md
 
-### Files Retained (Core Documentation)
-The following files constitute the permanent documentation set:
-
-#### User-Facing Documentation
-- **README.md** - Main entry point with quick start
-- **docs/DEPLOYMENT.md** - Production deployment guide
-- **docs/SECURITY.md** - Security considerations and best practices
-- **docs/TESTING.md** - Testing procedures and coverage
-- **docs/OPERATIONS.md** - Operational procedures and runbooks
-- **docs/ADR.md** - Architecture Decision Records
-- **docs/GLOSSARY.md** - Terminology and definitions
-
-#### Project Files
-- **CHANGELOG.md** - Version history and changes
-- **CONTRIBUTING.md** - Contribution guidelines
-- **LICENSE** - Apache License 2.0
-- **config.example.yaml** - Configuration reference
-- **EFP_HEARTBEAT_RECOMMENDATION.md** - EFP requirements and scope (critical context)
-
-#### Configuration and Build
-- `pyproject.toml` - Project configuration
-- `requirements.txt` - Python dependencies
-- `.ruff.toml` - Linting configuration
-- `.pre-commit-config.yaml` - Pre-commit hooks
-- `pytest.ini` - Test configuration
-
-#### Scripts and System Files
-- `scripts/generate_certs.sh` - Certificate generation
-- `scripts/run_tests.sh` - Test runner
-- `systemd/slurm-heartbeat.service` - systemd service file
-
 ## Benefits of Consolidation
 
 1. **Reduced Redundancy**: Eliminated ~23 duplicate or historical files
@@ -75,55 +86,94 @@ The following files constitute the permanent documentation set:
 3. **Single Source of Truth**: README.md is now the primary entry point
 4. **Maintainability**: Easier to keep documentation up-to-date
 5. **Discoverability**: Clear organization in `docs/` directory
+6. **Accurate Status**: Federation features clearly marked as "EXPERIMENTAL"
 
 ## Documentation Structure
 
 ```
 root/
   README.md                    # Main entry point
-  QUICKSTART.md                # REMOVED (merged into README)
   CHANGELOG.md                 # Version history
   CONTRIBUTING.md              # Contribution guidelines
-  LICENSE                      # License
+  LICENSE                      # Apache License 2.0
   config.example.yaml          # Configuration reference
-  EFP_HEARTBEAT_RECOMMENDATION.md  # EFP requirements (critical context)
-  
   docs/
-    DEPLOYMENT.md              # Production deployment
-    SECURITY.md                # Security guide
-    TESTING.md                 # Testing procedures
-    OPERATIONS.md              # Operational runbooks
-    ADR.md                     # Architecture decisions
-    GLOSSARY.md                # Terminology
+    ADR.md                     # Architecture Decision Records
+    CODEBASE_REVIEW.md         # Codebase review and analysis
     CONSOLIDATION_SUMMARY.md   # This document
-    
-  scripts/
+    CONTAINER_DEPLOYMENT.md    # Docker deployment guide
+    DEPLOYMENT.md              # Production deployment guide
+    EFP_HEARTBEAT_RECOMMENDATION.md  # EFP requirements (critical)
+    FEDERATION.md              # Federation components (experimental)
+    FEDERATION_IMPLEMENTATION_STATUS.md  # Implementation status
+    FEDERATION_COMPLETE.md     # Verification summary
+    GLOSSARY.md                # Terminology
+    INSTALLATION.md            # Installation guide
+    OPERATIONS.md              # Operations guide
+    SECURITY.md                # Security guide
+    TESTING.md                 # Testing guide
+  examples/                    # Platform-specific deployment examples
+    snellius/                  # Snellius (Netherlands)
+    lumi/                      # LUMI (Finland)
+    marenostrum/               # MareNostrum5 (Spain)
+    leonardo/                  # Leonardo (Italy)
+    jupiter/                   # JUPITER (Germany)
+    meluxina/                  # MeluXina (Luxembourg)
+    vega/                      # Vega (Slovenia)
+    isambard-ai/               # Isambard-AI (UK)
+    deucalion/                 # DEUCALION (Spain)
+    daedalus/                  # DAEDALUS (Portugal)
+    arrhenius/                 # ARRHENIUS (Sweden)
+  scripts/                     # Utility scripts
     generate_certs.sh          # Certificate generation
     run_tests.sh               # Test runner
-    
-  systemd/
-    slurm-heartbeat.service    # systemd service
-    
+  systemd/                     # systemd service files
+    slurm-heartbeat.service    # Service unit file
   tests/                       # Test suite
   slurmheartbeat/              # Source code
 ```
 
-## Maintenance Guidelines
+## Current Status
 
-1. **README.md** should remain the primary entry point for new users
-2. **docs/** contains detailed operational and technical documentation
-3. **CHANGELOG.md** tracks all significant changes and fixes
-4. **EFP_HEARTBEAT_RECOMMENDATION.md** preserves critical EFP context
-5. Historical process documents should NOT be committed unless they contain actionable technical decisions (which go in docs/ADR.md)
+### Core Functionality
+- ✅ **149/149 tests passing**
+- ✅ **0 Ruff errors** (after fixes)
+- ✅ **0 Mypy errors**
+- ✅ **All components wired and tested**
 
-## Future Documentation
+### Federation Features
+- 🚧 **Experimental** - Implemented but not production-ready
+- ⚠️ **Requires EFP-wide decisions** on identity system and consumption patterns
+- 📝 **Documentation updated** to accurately reflect experimental status
 
-When adding new documentation:
-- Ask: "Is this user-facing reference material or historical process?"
-- User-facing → Add to `docs/` or update existing docs
-- Historical process → Do not commit (or add to a separate `archive/` directory if needed for audit trails)
-- Technical decisions → Add to docs/ADR.md with proper ADR format
+### Documentation Quality
+- ✅ **Accurate status** - All features correctly labeled (core vs. experimental)
+- ✅ **No redundancy** - Historical process docs removed
+- ✅ **Clear structure** - User-facing docs separated from reference docs
+- ✅ **Up-to-date** - All documentation reflects current implementation status
 
----
+## Recommendations
 
-**End of Consolidation Summary**
+### For Developers
+- ✅ Use `README.md` as primary entry point
+- ✅ Refer to `docs/` for detailed guides
+- ✅ Check `docs/FEDERATION.md` for experimental features
+- ⚠️ Do not enable federation features in production without EFP approval
+
+### For Maintainers
+- ✅ Keep historical process docs out of main branch
+- ✅ Update `CHANGELOG.md` for all significant changes
+- ✅ Ensure documentation matches implementation status
+- ✅ Review federation documentation before production rollout
+
+### For EFP Stakeholders
+- 📋 Review `docs/FEDERATION_IMPLEMENTATION_STATUS.md` for implementation details
+- 🗳️ Provide guidance on identity system and consumption patterns
+- 🧪 Consider pilot deployment on 1-2 test sites
+
+## Conclusion
+
+Documentation has been consolidated and updated to accurately reflect the current implementation status. Federation features are clearly marked as "EXPERIMENTAL" and not recommended for production deployment without EFP-wide decisions.
+
+**Last Updated**: 2026-05-10  
+**Next Review**: After EFP identity system decision

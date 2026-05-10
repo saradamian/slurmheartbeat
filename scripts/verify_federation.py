@@ -7,28 +7,29 @@ Run this script to verify all federation components are properly wired.
 import sys
 from pathlib import Path
 
+
 def verify_imports():
     """Verify all federation imports work."""
     import sys
     from pathlib import Path
-    
+
     # Add project root to path
     project_root = Path(__file__).parent.parent
     if str(project_root) not in sys.path:
         sys.path.insert(0, str(project_root))
-    
+
     try:
+        from slurmheartbeat.federation.aggregation import MetricsAggregator
         from slurmheartbeat.federation.discovery import FederationDiscovery
         from slurmheartbeat.federation.prediction import QueuePredictor
-        from slurmheartbeat.federation.aggregation import MetricsAggregator
         from slurmheartbeat.main import HeartbeatDaemon
-        
+
         # Verify classes are accessible
         _ = FederationDiscovery.__name__
         _ = QueuePredictor.__name__
         _ = MetricsAggregator.__name__
         _ = HeartbeatDaemon.__name__
-        
+
         print("✅ All federation imports successful")
         return True
     except ImportError as e:
@@ -55,10 +56,10 @@ def main():
     """Run verification."""
     print("Federation Implementation Verification")
     print("=" * 40)
-    
+
     imports_ok = verify_imports()
     tests_ok = verify_tests()
-    
+
     if imports_ok and tests_ok:
         print("\n✅ Federation implementation is COMPLETE and PRODUCTION-READY")
         return 0

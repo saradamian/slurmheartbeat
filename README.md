@@ -237,12 +237,12 @@ The following EFP gaps remain open for federation-wide decisions:
 - **EFP Identity System**: No standardized identity system (EFP PKI vs. site vs. MyAccessID) - requires EFP-wide decision
 - **Consumption Pattern**: No standardized signal consumption pattern - requires EFP stakeholder decision
 
-**Note**: The following capabilities are **implemented and wired** as production-ready features:
-- ✅ **Federated Capacity Discovery** - Peer discovery and capacity fetching via `/federated/peers` endpoint (see [`docs/FEDERATION.md`](docs/FEDERATION.md))
-- ✅ **Queue Prediction** - Basic queue pressure and wait time prediction via `/federated/queues` endpoint (see [`docs/FEDERATION.md`](docs/FEDERATION.md))
-- ✅ **Metrics Aggregation** - Federated metrics aggregation for dashboards via `/federated/metrics` endpoint (see [`docs/FEDERATION.md`](docs/FEDERATION.md))
+**⚠️ Experimental Features**: The following capabilities are **implemented but experimental** and require EFP-wide decisions before production use:
+- 🚧 **Federated Capacity Discovery** - Peer discovery and capacity fetching via `/federated/peers` endpoint (see [`docs/FEDERATION.md`](docs/FEDERATION.md))
+- 🚧 **Queue Prediction** - Basic queue pressure and wait time prediction via `/federated/queues` endpoint (see [`docs/FEDERATION.md`](docs/FEDERATION.md))
+- 🚧 **Metrics Aggregation** - Federated metrics aggregation for dashboards via `/federated/metrics` endpoint (see [`docs/FEDERATION.md`](docs/FEDERATION.md))
 
-These features are **production-ready** and can be enabled via `client.federation.enabled: true` in the configuration. They require manual peer configuration and are suitable for production deployment. All federation components are properly wired into the daemon lifecycle (initialization, startup, shutdown) and exposed via dedicated HTTP endpoints.
+These features are **experimental** and can be enabled via `client.federation.enabled: true` in the configuration. They require manual peer configuration and are **NOT recommended for production deployment** without EFP stakeholder approval. All federation components are wired into the daemon lifecycle (initialization, startup, shutdown) and exposed via dedicated HTTP endpoints, but remain unproven at scale.
 
 ---
 
