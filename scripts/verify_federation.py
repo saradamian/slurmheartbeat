@@ -9,6 +9,14 @@ from pathlib import Path
 
 def verify_imports():
     """Verify all federation imports work."""
+    import sys
+    from pathlib import Path
+    
+    # Add project root to path
+    project_root = Path(__file__).parent.parent
+    if str(project_root) not in sys.path:
+        sys.path.insert(0, str(project_root))
+    
     try:
         from slurmheartbeat.federation.discovery import FederationDiscovery
         from slurmheartbeat.federation.prediction import QueuePredictor
